@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER STRIKER 3D - First Person Shooter</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- 3D Render Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Overlay HUD -->
+    <div id="hud">
+        <!-- Top Stats Bar -->
+        <div id="top-bar">
+            <div class="stat-box">
+                <span class="stat-label">SCORE</span>
+                <span id="score-val" class="stat-value">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">WAVE</span>
+                <span id="wave-val" class="stat-value">1</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">ENEMIES</span>
+                <span id="enemies-val" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <!-- Crosshair -->
+        <div id="crosshair">
+            <div class="ch-line ch-top"></div>
+            <div class="ch-line ch-bottom"></div>
+            <div class="ch-line ch-left"></div>
+            <div class="ch-line ch-right"></div>
+            <div class="ch-dot"></div>
+        </div>
+
+        <!-- Hit Marker Overlay -->
+        <div id="hit-marker">
+            <div class="hm-line hm-1"></div>
+            <div class="hm-line hm-2"></div>
+        </div>
+
+        <!-- Damage Flash Overlay -->
+        <div id="damage-flash"></div>
+
+        <!-- Wave Announcement Banner -->
+        <div id="wave-banner" class="hidden">
+            <h2 id="wave-title">WAVE 1</h2>
+            <p id="wave-subtitle">PREPARE FOR COMBAT</p>
+        </div>
+
+        <!-- Bottom HUD Bar -->
+        <div id="bottom-bar">
+            <!-- Health Display -->
+            <div id="health-container">
+                <div class="bar-header">
+                    <span>HEALTH</span>
+                    <span id="health-val">100 / 100</span>
+                </div>
+                <div class="bar-outer">
+                    <div id="health-bar-inner"></div>
+                </div>
+            </div>
+
+            <!-- Ammo & Reload Display -->
+            <div id="ammo-container">
+                <div id="weapon-name">PISTOL</div>
+                <div id="ammo-count">
+                    <span id="ammo-clip">12</span> <span class="ammo-slash">/</span> <span id="ammo-reserve">96</span>
+                </div>
+                <div id="reload-prompt" class="hidden">PRESS 'R' TO RELOAD</div>
+            </div>
+
+            <!-- Weapon Select Hotbar -->
+            <div id="weapon-hotbar">
+                <div class="slot active" id="slot-1">
+                    <span class="key">1</span>
+                    <span class="name">PISTOL</span>
+                </div>
+                <div class="slot" id="slot-2">
+                    <span class="key">2</span>
+                    <span class="name">SHOTGUN</span>
+                </div>
+                <div class="slot" id="slot-3">
+                    <span class="key">3</span>
+                    <span class="name">RIFLE</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container for 3D Projected Floating Damage Numbers -->
+    <div id="damage-texts"></div>
+
+    <!-- Start Screen Overlay -->
+    <div id="start-screen" class="overlay-screen">
+        <div class="panel">
+            <h1 class="title">CYBER STRIKER 3D</h1>
+            <p class="subtitle">SURVIVE THE CYBERNETIC HORDE</p>
+            
+            <div class="controls-guide">
+                <h3>CONTROLS</h3>
+                <div class="control-grid">
+                    <div><span class="k">W A S D</span> Move</div>
+                    <div><span class="k">MOUSE</span> Look & Aim</div>
+                    <div><span class="k">LEFT CLICK</span> Shoot</div>
+                    <div><span class="k">R</span> Reload</div>
+                    <div><span class="k">1 / 2 / 3</span> Switch Weapons</div>
+                    <div><span class="k">SPACE</span> Jump</div>
+                    <div><span class="k">SHIFT</span> Sprint</div>
+                </div>
+            </div>
+
+            <button id="start-btn" class="cyber-btn">START OPERATION</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen Overlay -->
+    <div id="game-over-screen" class="overlay-screen hidden">
+        <div class="panel">
+            <h1 id="game-over-title" class="title game-over-text">SYSTEM FAILURE</h1>
+            <div class="final-stats">
+                <p>WAVES SURVIVED: <span id="final-wave">0</span></p>
+                <p>ENEMIES ELIMINATED: <span id="final-kills">0</span></p>
+                <p>FINAL SCORE: <span id="final-score">0</span></p>
+            </div>
+            <button id="restart-btn" class="cyber-btn">REDEPLOY</button>
+        </div>
+    </div>
+
+    <!-- Core Game Logic -->
+    <script src="game.js"></script>
+</body>
+</html>
