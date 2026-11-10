@@ -21,7 +21,7 @@ The game is a client-side, zero-build-step 3D First Person Shooter built entirel
 
 ## 2. Recent Improvements (Latest Run)
 
-1. **Robust Version Management & HUD Integration**: Implemented centralized versioning via `version.js` with automatic badge rendering across menus and HUD overlays.
+1. **Robust Version Management & HUD Integration**: Implemented centralized versioning via `version.js` (SemVer `v1.2.0-STABLE`) with automatic badge rendering across menus and HUD overlays.
 2. **Combat & Physics Polish**:
    - Tuned spring-smoothing for weapon recoil and landing impacts.
    - Refined multi-kill combo notification banners and headshot feedback loops.
@@ -32,7 +32,14 @@ The game is a client-side, zero-build-step 3D First Person Shooter built entirel
 
 ---
 
-## 3. Recommended Roadmap for Future Runs
+## 3. Completed & Verified Tasks
+- Verified client-side zero-build-step architecture with Three.js and Web Audio API.
+- Implemented and verified Semantic Versioning badge across start screen and HUD.
+- Tested obstacle collision detection, weapon switching, and wave progression systems.
+
+---
+
+## 4. Recommended Roadmap for Future Runs
 
 If you are continuing development on Cyber Strike 3D, here are exciting features and optimizations to consider next:
 
