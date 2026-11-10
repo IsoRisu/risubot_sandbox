@@ -515,7 +515,193 @@ class Game {
     this.projectiles = [];
     this.obstacles = []; // AABBs for collisions
 
+    // Dedicated groups for optimized raycasting without full scene traversal
+    this.enemyGroup = new THREE.Group();
+    this.scene.add(this.enemyGroup);
+
+    this.obstacleGroup = new THREE.Group();
+    this.scene.add(this.obstacleGroup);
+
     this.clock = new THREE.Clock();
+>>>>
+
+<<<EDIT path=game.js op=replace
+    wallsData.forEach(w => {
+      const geo = new THREE.BoxGeometry(...w.size);
+      const mesh = new THREE.Mesh(geo, wallMat);
+      mesh.position.set(...w.pos);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.scene.add(mesh);
+
+      const box = new THREE.Box3().setFromObject(mesh);
+      this.obstacles.push(box);
+    });
+===
+    wallsData.forEach(w => {
+      const geo = new THREE.BoxGeometry(...w.size);
+      const mesh = new THREE.Mesh(geo, wallMat);
+      mesh.position.set(...w.pos);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.obstacleGroup.add(mesh);
+
+      const box = new THREE.Box3().setFromObject(mesh);
+      this.obstacles.push(box);
+    });
+>>>>
+
+<<<EDIT path=game.js op=replace
+    obstacleConfigs.forEach(cfg => {
+      const mesh = new THREE.Mesh(cfg.geo, cfg.mat);
+      mesh.position.set(...cfg.pos);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.scene.add(mesh);
+
+      const box = new THREE.Box3().setFromObject(mesh);
+      this.obstacles.push(box);
+    });
+===
+    obstacleConfigs.forEach(cfg => {
+      const mesh = new THREE.Mesh(cfg.geo, cfg.mat);
+      mesh.position.set(...cfg.pos);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.obstacleGroup.add(mesh);
+
+      const box = new THREE.Box3().setFromObject(mesh);
+      this.obstacles.push(box);
+    });
+>>>>
+
+<<<EDIT path=game.js op=replace
+    state.score = 0;
+    state.kills = 0;
+    state.wave = 1;
+
+    this.enemies.forEach(e => this.scene.remove(e.mesh));
+    this.enemies = [];
+===
+    state.score = 0;
+    state.kills = 0;
+    state.wave = 1;
+
+    this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
+    this.enemies = [];
+>>>>
+
+<<<EDIT path=game.js op=replace
+    group.position.set(0, 0, -dist);
+    this.scene.add(group);
+
+    const bossObj = {
+===
+    group.position.set(0, 0, -dist);
+    this.enemyGroup.add(group);
+
+    const bossObj = {
+>>>>
+
+<<<EDIT path=game.js op=replace
+    group.position.set(x, 0, z);
+    this.scene.add(group);
+
+    this.enemies.push({
+===
+    group.position.set(x, 0, z);
+    this.enemyGroup.add(group);
+
+    this.enemies.push({
+>>>>
+
+<<<EDIT path=game.js op=replace
+    for (let p = 0; p < weapon.pellets; p++) {
+      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
+
+      // Collect all enemy meshes and environment obstacles for precise hitscan raycasting
+      const enemyMeshes = this.enemies.map(e => e.mesh);
+      const enemyIntersects = this.raycaster.intersectObjects(enemyMeshes, true);
+      const obstacleIntersects = this.raycaster.intersectObjects(this.scene.children, true);
+
+      // Filter obstacle intersects to only environment geometry (exclude enemies/particles)
+      const validObstacles = obstacleIntersects.filter(hit => {
+        let obj = hit.object;
+        while (obj.parent && obj !== this.scene) {
+          if (this.enemies.some(e => e.mesh === obj)) return false;
+          obj = obj.parent;
+        }
+        return true;
+      });
+
+      let hitPoint = null;
+      let hitEnemy = null;
+      let isHeadshot = false;
+      let closestDistance = Infinity;
+
+      if (enemyIntersects.length > 0) {
+        closestDistance = enemyIntersects[0].distance;
+        hitPoint = enemyIntersects[0].point;
+        let obj = enemyIntersects[0].object;
+        isHeadshot = obj.name === 'head';
+        while (obj.parent && !this.enemies.some(e => e.mesh === obj)) {
+          obj = obj.parent;
+        }
+        hitEnemy = this.enemies.find(e => e.mesh === obj);
+      }
+
+      // Check if wall/obstacle is closer than the enemy hit
+      if (validObstacles.length > 0 && validObstacles[0].distance < closestDistance) {
+        hitPoint = validObstacles[0].point;
+        hitEnemy = null;
+        isHeadshot = false;
+      } else if (!hitPoint && validObstacles.length > 0) {
+        hitPoint = validObstacles[0].point;
+      }
+===
+    for (let p = 0; p < weapon.pellets; p++) {
+      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
+
+      // Raycast against isolated enemy and obstacle groups directly, avoiding full scene traversal
+      const enemyIntersects = this.raycaster.intersectObject(this.enemyGroup, true);
+      const obstacleIntersects = this.raycaster.intersectObject(this.obstacleGroup, true);
+
+      let hitPoint = null;
+      let hitEnemy = null;
+      let isHeadshot = false;
+      let closestDistance = Infinity;
+
+      if (enemyIntersects.length > 0) {
+        closestDistance = enemyIntersects[0].distance;
+        hitPoint = enemyIntersects[0].point;
+        let obj = enemyIntersects[0].object;
+        isHeadshot = obj.name === 'head';
+        while (obj.parent && obj !== this.enemyGroup) {
+          obj = obj.parent;
+        }
+        hitEnemy = this.enemies.find(e => e.mesh === obj);
+      }
+
+      if (obstacleIntersects.length > 0 && obstacleIntersects[0].distance < closestDistance) {
+        hitPoint = obstacleIntersects[0].point;
+        hitEnemy = null;
+        isHeadshot = false;
+      } else if (!hitPoint && obstacleIntersects.length > 0) {
+        hitPoint = obstacleIntersects[0].point;
+      }
+>>>>
+
+<<<EDIT path=game.js op=replace
+    this.scene.remove(enemy.mesh);
+    this.enemies = this.enemies.filter(e => e !== enemy);
+===
+    this.enemyGroup.remove(enemy.mesh);
+    this.enemies = this.enemies.filter(e => e !== enemy);
+>>>>
     this.lastShotTime = 0;
     this.screenShake = 0;
 >>>>
