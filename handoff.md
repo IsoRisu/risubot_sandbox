@@ -19,18 +19,16 @@ The game is a client-side, zero-build-step 3D First Person Shooter built entirel
 
 ---
 
-## 2. Recent Improvements (This Run)
+## 2. Recent Improvements (Latest Run)
 
-1. **Version Management Integration**: Established `version.js` and displayed the version badge in the top-left HUD corner and the start menu.
-2. **Combat & Gameplay Polish**:
-   - Enhanced weapon recoil, screen shake, and recoil recovery spring smoothing.
-   - Refined multi-kill combo banner messaging and duration timers.
-   - Added critical headshot damage number indicators with floating animations.
-   - Expanded audio feedback with distinct weapon fire sounds, jump thuds, landing impacts, weapon switching, and powerup cues.
-3. **UI/UX Enhancement**:
-   - Added dynamic shield and health status bars with visual re-charge delay countdowns.
-   - Implemented circular minimap radar tracking relative player orientation and hostile drone positions.
-   - Added interactive audio toggle for the procedural synth beat BGM engine.
+1. **Robust Version Management & HUD Integration**: Implemented centralized versioning via `version.js` with automatic badge rendering across menus and HUD overlays.
+2. **Combat & Physics Polish**:
+   - Tuned spring-smoothing for weapon recoil and landing impacts.
+   - Refined multi-kill combo notification banners and headshot feedback loops.
+   - Added precise AABB bounding box collision resolution against procedural obstacles and perimeter walls.
+3. **Audio & UI Enhancements**:
+   - Built a comprehensive Web Audio API procedural sound suite including gunfire variants, footsteps, reloads, powerups, and BGM sequencing.
+   - Added real-time circular minimap radar tracking relative player orientation and drone vectors.
 
 ---
 
