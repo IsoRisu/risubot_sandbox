@@ -229,7 +229,82 @@ class SoundSystem {
     osc.stop(now + 0.1);
   }
 
+  playPulseSMG() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+
+  playDash() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  }
+
+  playPowerup() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const notes = [440, 554.37, 659.25, 880];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const startTime = now + idx * 0.05;
+      gain.gain.setValueAtTime(0.25, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.15);
+    });
+  }
+
+  playBossSpawn() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.linearRampToValueAtTime(220, now + 0.6);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 1.2);
+  }
+
   startBGM() {
+===
     if (this.bgmTimer) return;
     let step = 0;
     this.bgmTimer = setInterval(() => {
@@ -306,6 +381,18 @@ const WEAPONS = [
     recoilZ: 0.45,
     recoilRot: 0.5,
     color: 0xff0055
+  },
+  {
+    name: 'PULSE SMG',
+    clipSize: 45,
+    maxReserve: 270,
+    fireRate: 65,
+    damage: 18,
+    pellets: 1,
+    spread: 0.035,
+    recoilZ: 0.06,
+    recoilRot: 0.07,
+    color: 0x33ff00
   }
 ];
 
@@ -315,6 +402,9 @@ const state = {
   paused: false,
   health: 100,
   maxHealth: 100,
+  shield: 50,
+  maxShield: 50,
+  shieldDelayTimer: 0,
   ammoClip: 30,
   clipSize: 30,
   ammoReserve: 120,
@@ -325,7 +415,15 @@ const state = {
   wave: 1,
   enemiesLeft: 0,
   currentWeapon: 0,
-  isAiming: false
+  isAiming: false,
+  dashCooldown: 0,
+  dashMaxCooldown: 2.5,
+  isDashing: false,
+  dashDuration: 0,
+  comboCount: 0,
+  comboTimer: 0,
+  powerup: { active: false, type: null, timer: 0 },
+  boss: null
 };
 
 // Main Game Engine Class
@@ -573,7 +671,16 @@ class Game {
     railCore.position.set(0, 0, -0.2);
     railGroup.add(railBody, railCore);
 
-    this.weaponMeshes.push(rifleGroup, sgGroup, railGroup);
+    // 3: Pulse SMG
+    const smgGroup = new THREE.Group();
+    const smgBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.45), darkMat);
+    const smgBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.4, 16).rotateX(Math.PI / 2), darkMat);
+    smgBarrel.position.set(0, 0.02, -0.3);
+    const smgStripe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.02, 0.3), new THREE.MeshStandardMaterial({ color: 0x33ff00, emissive: 0x33ff00, emissiveIntensity: 0.7 }));
+    smgStripe.position.set(0, 0.03, -0.05);
+    smgGroup.add(smgBody, smgBarrel, smgStripe);
+
+    this.weaponMeshes.push(rifleGroup, sgGroup, railGroup, smgGroup);
     this.weaponMeshes.forEach((m, idx) => {
       m.visible = idx === 0;
       this.weaponGroup.add(m);
@@ -607,6 +714,10 @@ class Game {
         case 'Digit1': this.switchWeapon(0); break;
         case 'Digit2': this.switchWeapon(1); break;
         case 'Digit3': this.switchWeapon(2); break;
+        case 'Digit4': this.switchWeapon(3); break;
+        case 'KeyE':
+          this.performDash();
+          break;
         case 'Space':
           if (this.isGrounded) {
             this.velocity.y = 8.5;
@@ -681,6 +792,13 @@ class Game {
     state.active = true;
     state.paused = false;
     state.health = 100;
+    state.shield = 50;
+    state.shieldDelayTimer = 0;
+    state.dashCooldown = 0;
+    state.comboCount = 0;
+    state.comboTimer = 0;
+    state.powerup = { active: false, type: null, timer: 0 };
+    state.boss = null;
     state.currentWeapon = 0;
     state.clipSize = WEAPONS[0].clipSize;
     state.ammoClip = WEAPONS[0].clipSize;
@@ -698,6 +816,9 @@ class Game {
     this.particles = [];
     this.projectiles.forEach(pr => this.scene.remove(pr.mesh));
     this.projectiles = [];
+    document.getElementById('boss-bar-container').classList.add('hidden');
+    document.getElementById('powerup-banner').classList.add('hidden');
+    document.getElementById('combo-banner').classList.add('hidden');
 
     this.camera.position.set(0, this.playerHeight, 0);
     this.velocity.set(0, 0, 0);
@@ -721,22 +842,79 @@ class Game {
 
   startWave(waveNumber) {
     state.wave = waveNumber;
-    const count = 4 + waveNumber * 3;
+    const isBossWave = (waveNumber % 5 === 0);
+    const count = isBossWave ? 1 : 4 + waveNumber * 3;
     state.enemiesLeft = count;
     this.updateHUD();
 
     // Show wave banner
     const banner = document.getElementById('wave-banner');
-    banner.textContent = `WAVE ${waveNumber}`;
+    banner.textContent = isBossWave ? `BOSS WAVE ${waveNumber}` : `WAVE ${waveNumber}`;
     banner.classList.remove('hidden');
     setTimeout(() => banner.classList.add('hidden'), 2500);
 
-    // Spawn Enemies
-    for (let i = 0; i < count; i++) {
+    if (isBossWave) {
+      sounds.playBossSpawn();
       setTimeout(() => {
-        if (state.active) this.spawnEnemy();
-      }, i * 600);
+        if (state.active) this.spawnBoss();
+      }, 1000);
+    } else {
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+          if (state.active) this.spawnEnemy();
+        }, i * 500);
+      }
     }
+  }
+
+  spawnBoss() {
+    const dist = 30;
+    const group = new THREE.Group();
+    const radius = 2.5;
+    const hp = 600 + state.wave * 250;
+
+    const coreMat = new THREE.MeshStandardMaterial({ color: 0x11111a, roughness: 0.2, metalness: 0.9 });
+    const core = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 24), coreMat);
+    core.position.y = radius + 0.5;
+    group.add(core);
+
+    const eyeHead = new THREE.Mesh(
+      new THREE.SphereGeometry(1.0, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 2.0 })
+    );
+    eyeHead.position.set(0, radius + 0.5, radius * 0.85);
+    eyeHead.name = 'head';
+    group.add(eyeHead);
+
+    const armorRing = new THREE.Mesh(
+      new THREE.TorusGeometry(radius * 1.5, 0.2, 16, 32),
+      new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff3300, emissiveIntensity: 0.8 })
+    );
+    armorRing.rotation.x = Math.PI / 2;
+    armorRing.position.y = radius + 0.5;
+    group.add(armorRing);
+
+    group.position.set(0, 0, -dist);
+    this.scene.add(group);
+
+    const bossObj = {
+      mesh: group,
+      head: eyeHead,
+      ring: armorRing,
+      type: 'boss',
+      hp: hp,
+      maxHp: hp,
+      speed: 2.5,
+      lastAttack: 0,
+      attackCooldown: 1200
+    };
+
+    this.enemies.push(bossObj);
+    state.boss = bossObj;
+
+    document.getElementById('boss-name').textContent = `CYBER DREADNOUGHT - WAVE ${state.wave}`;
+    document.getElementById('boss-bar-container').classList.remove('hidden');
+    document.getElementById('boss-bar-fill').style.width = '100%';
   }
 
   spawnEnemy() {
@@ -809,12 +987,26 @@ class Game {
   }
 
   spawnPickup(position) {
-    const isHealth = Math.random() < 0.5;
+    const rand = Math.random();
+    let type = 'ammo';
+    let colorHex = 0x00f0ff;
+
+    if (rand < 0.3) {
+      type = 'health';
+      colorHex = 0x00ff88;
+    } else if (rand < 0.5) {
+      type = 'shield';
+      colorHex = 0x00bfff;
+    } else if (rand < 0.7) {
+      type = 'damage';
+      colorHex = 0xff0055;
+    }
+
     const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
     const mat = new THREE.MeshStandardMaterial({
-      color: isHealth ? 0x00ff88 : 0x00f0ff,
-      emissive: isHealth ? 0x00ff88 : 0x00f0ff,
-      emissiveIntensity: 0.6
+      color: colorHex,
+      emissive: colorHex,
+      emissiveIntensity: 0.8
     });
 
     const mesh = new THREE.Mesh(geo, mat);
@@ -822,10 +1014,24 @@ class Game {
     mesh.position.y = 0.6;
     this.scene.add(mesh);
 
-    this.pickups.push({
-      mesh: mesh,
-      type: isHealth ? 'health' : 'ammo'
-    });
+    this.pickups.push({ mesh: mesh, type: type });
+  }
+
+  performDash() {
+    if (state.dashCooldown > 0 || !state.active || state.paused) return;
+
+    sounds.playDash();
+    state.dashCooldown = state.dashMaxCooldown;
+    state.isDashing = true;
+    state.dashDuration = 0.18;
+
+    const dashDir = new THREE.Vector3();
+    this.camera.getWorldDirection(dashDir);
+    dashDir.y = 0;
+    dashDir.normalize();
+
+    this.velocity.add(dashDir.multiplyScalar(32));
+    this.createSparks(this.camera.position, 0x00f0ff);
   }
 
   shoot() {
@@ -846,7 +1052,8 @@ class Game {
 
     if (state.currentWeapon === 0) sounds.playGunshot();
     else if (state.currentWeapon === 1) sounds.playShotgun();
-    else sounds.playRailgun();
+    else if (state.currentWeapon === 2) sounds.playRailgun();
+    else sounds.playPulseSMG();
 
     this.muzzleFlashLight.color.setHex(weapon.color);
     this.muzzleFlashLight.intensity = 4;
@@ -877,13 +1084,20 @@ class Game {
         }
         const enemy = this.enemies.find(e => e.mesh === obj);
         if (enemy) {
-          const mult = isHeadshot ? 2.0 : 1.0;
+          const mult = (isHeadshot ? 2.0 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
           const dmg = Math.round(weapon.damage * mult * (0.9 + Math.random() * 0.2));
           enemy.hp -= dmg;
           sounds.playHit();
           this.triggerHitMarker();
           this.showDamagePopup(hit.point, dmg, isHeadshot);
           this.createSparks(hit.point, weapon.color);
+
+          this.createTracerLine(this.weaponGroup.position, hit.point, weapon.color);
+
+          if (enemy === state.boss) {
+            const fill = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
+            document.getElementById('boss-bar-fill').style.width = `${fill}%`;
+          }
 
           if (enemy.hp <= 0) {
             this.destroyEnemy(enemy);
@@ -917,21 +1131,46 @@ class Game {
     setTimeout(() => pop.remove(), 600);
   }
 
+  createTracerLine(start, end, colorHex) {
+    const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
+    const line = new THREE.Line(geo, mat);
+    this.scene.add(line);
+    setTimeout(() => this.scene.remove(line), 40);
+  }
+
   destroyEnemy(enemy) {
     sounds.playEnemyDeath();
     this.createExplosion(enemy.mesh.position);
 
-    // Chance to drop pickup
-    if (Math.random() < 0.45) {
+    if (enemy === state.boss) {
+      state.boss = null;
+      document.getElementById('boss-bar-container').classList.add('hidden');
+      for (let k = 0; k < 3; k++) this.spawnPickup(enemy.mesh.position);
+    } else if (Math.random() < 0.5) {
       this.spawnPickup(enemy.mesh.position);
     }
 
     this.scene.remove(enemy.mesh);
     this.enemies = this.enemies.filter(e => e !== enemy);
 
-    state.score += 150;
+    // Multikill combo handling
+    state.comboCount++;
+    state.comboTimer = 2.5;
+
+    let scoreGain = 150 * Math.min(state.comboCount, 5);
+    if (enemy.type === 'boss') scoreGain = 2000;
+
+    state.score += scoreGain;
     state.kills++;
     state.enemiesLeft--;
+
+    if (state.comboCount >= 2) {
+      const comboBanner = document.getElementById('combo-banner');
+      comboBanner.textContent = `${state.comboCount}x MULTIKILL! +${scoreGain}`;
+      comboBanner.classList.remove('hidden');
+    }
+
     this.updateHUD();
 
     if (state.enemiesLeft <= 0 && this.enemies.length === 0) {
@@ -1011,7 +1250,22 @@ class Game {
   takeDamage(amount) {
     if (!state.active || state.health <= 0) return;
 
-    state.health = Math.max(0, state.health - amount);
+    state.shieldDelayTimer = 3.0; // Reset shield recharge delay
+
+    if (state.shield > 0) {
+      if (state.shield >= amount) {
+        state.shield -= amount;
+        amount = 0;
+      } else {
+        amount -= state.shield;
+        state.shield = 0;
+      }
+    }
+
+    if (amount > 0) {
+      state.health = Math.max(0, state.health - amount);
+    }
+
     sounds.playPlayerHurt();
     this.updateHUD();
 
@@ -1044,7 +1298,13 @@ class Game {
 
   updateHUD() {
     document.getElementById('health-bar-fill').style.width = `${(state.health / state.maxHealth) * 100}%`;
-    document.getElementById('health-text').textContent = `${Math.ceil(state.health)} / ${state.maxHealth}`;
+    document.getElementById('shield-bar-fill').style.width = `${(state.shield / state.maxShield) * 100}%`;
+    document.getElementById('health-text').textContent = `${Math.ceil(state.shield)} | ${Math.ceil(state.health)}`;
+
+    const dashPercent = Math.max(0, Math.min(100, ((state.dashMaxCooldown - state.dashCooldown) / state.dashMaxCooldown) * 100));
+    document.getElementById('dash-bar-fill').style.width = `${dashPercent}%`;
+    document.getElementById('dash-status').textContent = state.dashCooldown <= 0 ? 'READY' : 'CHARGING';
+
     document.getElementById('ammo-clip').textContent = state.ammoClip;
     document.getElementById('ammo-reserve').textContent = state.ammoReserve;
     document.getElementById('wave-num').textContent = state.wave;
@@ -1071,7 +1331,42 @@ class Game {
   updatePlayer(delta) {
     if (!state.active || state.paused) return;
 
-    const moveSpeed = this.moveState.sprint ? 14 : 9;
+    // Shield Recharge logic
+    if (state.shieldDelayTimer > 0) {
+      state.shieldDelayTimer -= delta;
+    } else if (state.shield < state.maxShield) {
+      state.shield = Math.min(state.maxShield, state.shield + 20 * delta);
+      this.updateHUD();
+    }
+
+    // Dash Cooldown logic
+    if (state.dashCooldown > 0) {
+      state.dashCooldown = Math.max(0, state.dashCooldown - delta);
+      this.updateHUD();
+    }
+
+    // Combo Timer logic
+    if (state.comboTimer > 0) {
+      state.comboTimer -= delta;
+      if (state.comboTimer <= 0) {
+        state.comboCount = 0;
+        document.getElementById('combo-banner').classList.add('hidden');
+      }
+    }
+
+    // Powerup Timer logic
+    if (state.powerup.active) {
+      state.powerup.timer -= delta;
+      if (state.powerup.timer <= 0) {
+        state.powerup.active = false;
+        state.powerup.type = null;
+        document.getElementById('powerup-banner').classList.add('hidden');
+      }
+    }
+
+    let moveSpeed = this.moveState.sprint ? 14 : 9;
+    if (state.powerup.type === 'speed') moveSpeed *= 1.4;
+
     const friction = 10;
 
     // Friction decay
@@ -1145,7 +1440,16 @@ class Game {
       const dist = dir.length();
       dir.normalize();
 
-      if (enemy.type === 'shooter' && dist < 16 && dist > 7) {
+      if (enemy.type === 'boss') {
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+        if (dist > 10) {
+          ePos.add(dir.multiplyScalar(enemy.speed * delta));
+        }
+        if (now - enemy.lastAttack > enemy.attackCooldown) {
+          enemy.lastAttack = now;
+          this.fireEnemyLaser(ePos);
+        }
+      } else if (enemy.type === 'shooter' && dist < 16 && dist > 7) {
         enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
         if (now - enemy.lastAttack > enemy.attackCooldown) {
           enemy.lastAttack = now;
@@ -1199,15 +1503,86 @@ class Game {
       if (dist < 1.8) {
         sounds.playPickup();
         if (pickup.type === 'health') {
-          state.health = Math.min(state.maxHealth, state.health + 35);
+          state.health = Math.min(state.maxHealth, state.health + 40);
+        } else if (pickup.type === 'shield') {
+          state.shield = state.maxShield;
+        } else if (pickup.type === 'damage') {
+          sounds.playPowerup();
+          state.powerup.active = true;
+          state.powerup.type = 'damage';
+          state.powerup.timer = 10;
+          const pBanner = document.getElementById('powerup-banner');
+          pBanner.textContent = 'OVERCHARGE 2X DAMAGE ACTIVE!';
+          pBanner.classList.remove('hidden');
         } else {
-          state.ammoReserve += 45;
+          state.ammoReserve += 60;
         }
         this.updateHUD();
         this.scene.remove(pickup.mesh);
         this.pickups.splice(index, 1);
       }
     });
+  }
+
+  updateRadar() {
+    const canvas = document.getElementById('radar-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const center = width / 2;
+    const radarScale = 1.8;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Background circle & rings
+    ctx.fillStyle = 'rgba(8, 15, 30, 0.85)';
+    ctx.beginPath();
+    ctx.arc(center, center, center - 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(center, center, center * 0.5, 0, Math.PI * 2);
+    ctx.arc(center, center, center * 0.85, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Player Direction vector
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    const pAngle = Math.atan2(forward.x, forward.z);
+
+    // Render Enemies as Dots
+    const playerPos = this.camera.position;
+    this.enemies.forEach(enemy => {
+      const relX = enemy.mesh.position.x - playerPos.x;
+      const relZ = enemy.mesh.position.z - playerPos.z;
+
+      // Rotate relative to player view angle
+      const rotX = relX * Math.cos(-pAngle) - relZ * Math.sin(-pAngle);
+      const rotZ = relX * Math.sin(-pAngle) + relZ * Math.cos(-pAngle);
+
+      const mapX = center + rotX * radarScale;
+      const mapY = center - rotZ * radarScale;
+
+      const distFromCenter = Math.hypot(mapX - center, mapY - center);
+      if (distFromCenter < center - 4) {
+        ctx.fillStyle = enemy.type === 'boss' ? '#ff0055' : (enemy.type === 'tank' ? '#ffaa00' : '#ff00bb');
+        ctx.beginPath();
+        ctx.arc(mapX, mapY, enemy.type === 'boss' ? 4.5 : 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Player center marker arrow
+    ctx.fillStyle = '#00f0ff';
+    ctx.beginPath();
+    ctx.moveTo(center, center - 5);
+    ctx.lineTo(center - 4, center + 4);
+    ctx.lineTo(center + 4, center + 4);
+    ctx.closePath();
+    ctx.fill();
   }
 
   updateParticles(delta) {
@@ -1275,6 +1650,7 @@ class Game {
       this.updatePickups();
       this.updateParticles(delta);
       this.updateWeapon(delta);
+      this.updateRadar();
     }
 
     this.renderer.render(this.scene, this.camera);

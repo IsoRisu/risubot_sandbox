@@ -46,6 +46,19 @@
         </div>
       </div>
 
+      <!-- Radar Display -->
+      <div id="radar-container">
+        <canvas id="radar-canvas" width="130" height="130"></canvas>
+      </div>
+
+      <!-- Boss Bar -->
+      <div id="boss-bar-container" class="hidden">
+        <div id="boss-name">CYBER DREADNOUGHT</div>
+        <div class="boss-bar-bg">
+          <div id="boss-bar-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
       <!-- Weapon Selector HUD Bar -->
       <div id="weapon-bar">
         <div class="weapon-slot active" id="wslot-0">
@@ -60,25 +73,43 @@
           <span class="slot-key">3</span>
           <span class="slot-name">RAIL CANNON</span>
         </div>
+        <div class="weapon-slot" id="wslot-3">
+          <span class="slot-key">4</span>
+          <span class="slot-name">PULSE SMG</span>
+        </div>
       </div>
 
       <!-- Center Notifications -->
       <div id="notification-area">
         <div id="wave-banner" class="hidden">WAVE 1</div>
+        <div id="combo-banner" class="hidden">2x MULTIKILL!</div>
+        <div id="powerup-banner" class="hidden">OVERCHARGE ACTIVE!</div>
         <div id="reload-warning" class="hidden">PRESS [R] TO RELOAD</div>
         <div id="low-health-warning" class="hidden">WARNING: CRITICAL HEALTH</div>
       </div>
 
       <!-- Bottom Status Bar -->
       <div id="bottom-bar">
-        <!-- Health Section -->
+        <!-- Health & Shield Section -->
         <div class="status-block">
           <div class="status-header">
-            <span>HEALTH</span>
-            <span id="health-text">100 / 100</span>
+            <span>SHIELD / HEALTH</span>
+            <span id="health-text">50 | 100</span>
+          </div>
+          <div class="bar-bg shield-bar-bg">
+            <div id="shield-bar-fill" style="width: 100%;"></div>
           </div>
           <div class="bar-bg">
             <div id="health-bar-fill" style="width: 100%;"></div>
+          </div>
+          <div id="dash-container">
+            <div class="status-header sub-header">
+              <span>CYBER DASH [E]</span>
+              <span id="dash-status">READY</span>
+            </div>
+            <div class="bar-bg dash-bar-bg">
+              <div id="dash-bar-fill" style="width: 100%;"></div>
+            </div>
           </div>
         </div>
 
@@ -110,10 +141,10 @@
           <div class="ctrl-item"><kbd>MOUSE</kbd> Aim Camera</div>
           <div class="ctrl-item"><kbd>LEFT CLICK</kbd> Shoot</div>
           <div class="ctrl-item"><kbd>RIGHT CLICK</kbd> Aim Sights</div>
-          <div class="ctrl-item"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> / Scroll Weapon</div>
+          <div class="ctrl-item"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> Weapons</div>
+          <div class="ctrl-item"><kbd>E</kbd> Cyber Dash</div>
           <div class="ctrl-item"><kbd>R</kbd> Reload</div>
-          <div class="ctrl-item"><kbd>SPACE</kbd> Jump</div>
-          <div class="ctrl-item"><kbd>SHIFT</kbd> Sprint</div>
+          <div class="ctrl-item"><kbd>SPACE</kbd> Jump / <kbd>SHIFT</kbd> Sprint</div>
         </div>
         <div class="audio-toggle-container">
           <label class="audio-checkbox">
