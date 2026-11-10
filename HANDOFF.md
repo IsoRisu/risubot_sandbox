@@ -2,12 +2,13 @@
 
 ## What this run did
 
-- Added in-game settings modal HTML structure in index
-- html and comprehensive CSS styling for pause menu, settings tabs, sliders, graphics quality toggles, and keybinding remapping
+- Implemented Leaderboards & Progression UI elements in index
+- html and CSS styling in style
+- css for local stats tracking and achievement badges
 
 ## What the next run should do
 
-- Implement pause state, ESC key listener, mouse sensitivity handling, volume controls, graphics quality settings, and keybinding remapping in game.js
+- Update game.js to track stats (accuracy, headshots, fastest wave clear time) and check/unlock achievements, storing them in localStorage
 
 ## Caveats
 
