@@ -497,12 +497,237 @@ class Game {
     this.lastShotTime = 0;
     this.screenShake = 0;
 
-    // Movement physics
+    // Movement physics & controls configuration
     this.moveState = { forward: false, backward: false, left: false, right: false, sprint: false };
     this.velocity = new THREE.Vector3();
     this.isGrounded = true;
     this.playerHeight = 1.6;
     this.playerRadius = 0.5;
+    this.coyoteTime = 0;
+    this.jumpRequested = false;
+>>>>
+
+<<<EDIT path=game.js op=replace
+        case 'Space':
+          if (this.isGrounded) {
+            this.velocity.y = 8.5;
+            this.isGrounded = false;
+            sounds.playJump();
+          }
+          break;
+===
+        case 'Space':
+          this.jumpRequested = true;
+          if (this.isGrounded || this.coyoteTime > 0) {
+            this.velocity.y = 9.8;
+            this.isGrounded = false;
+            this.coyoteTime = 0;
+            sounds.playJump();
+          }
+          break;
+>>>>
+
+<<<EDIT path=game.js op=replace
+  performDash() {
+    if (state.dashCooldown > 0 || !state.active || state.paused) return;
+
+    sounds.playDash();
+    state.dashCooldown = state.dashMaxCooldown;
+    state.isDashing = true;
+    state.dashDuration = 0.18;
+
+    const dashDir = new THREE.Vector3();
+    this.camera.getWorldDirection(dashDir);
+    dashDir.y = 0;
+    dashDir.normalize();
+
+    this.velocity.add(dashDir.multiplyScalar(32));
+    this.createSparks(this.camera.position, 0x00f0ff);
+  }
+===
+  performDash() {
+    if (state.dashCooldown > 0 || !state.active || state.paused) return;
+
+    sounds.playDash();
+    state.dashCooldown = state.dashMaxCooldown;
+    state.isDashing = true;
+    state.dashDuration = 0.22;
+
+    const dashDir = new THREE.Vector3();
+    const forwardVec = new THREE.Vector3();
+    this.camera.getWorldDirection(forwardVec);
+    forwardVec.y = 0;
+    forwardVec.normalize();
+
+    const sideVec = new THREE.Vector3();
+    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
+
+    let moveX = 0;
+    let moveZ = 0;
+    if (this.moveState.forward) moveZ += 1;
+    if (this.moveState.backward) moveZ -= 1;
+    if (this.moveState.left) moveX += 1;
+    if (this.moveState.right) moveX -= 1;
+
+    if (moveX !== 0 || moveZ !== 0) {
+      dashDir.set(0, 0, 0);
+      dashDir.add(forwardVec.clone().multiplyScalar(moveZ));
+      dashDir.add(sideVec.clone().multiplyScalar(moveX));
+      dashDir.normalize();
+    } else {
+      dashDir.copy(forwardVec);
+    }
+
+    // Preserve and boost momentum seamlessly
+    this.velocity.x = dashDir.x * 26;
+    this.velocity.z = dashDir.z * 26;
+    this.velocity.y = Math.max(this.velocity.y, 3.5); // Slight upward pop for fluid mobility
+
+    this.createSparks(this.camera.position, 0x00f0ff);
+    this.screenShake = 0.18;
+  }
+>>>>
+
+<<<EDIT path=game.js op=replace
+    let moveSpeed = this.moveState.sprint ? 14 : 9;
+    if (state.powerup.type === 'speed') moveSpeed *= 1.4;
+
+    const friction = 10;
+
+    // Friction decay
+    this.velocity.x -= this.velocity.x * friction * delta;
+    this.velocity.z -= this.velocity.z * friction * delta;
+
+    // Gravity
+    this.velocity.y -= 25 * delta;
+
+    // Direct vectors relative to camera orientation
+    const forwardVec = new THREE.Vector3();
+    this.camera.getWorldDirection(forwardVec);
+    forwardVec.y = 0;
+    forwardVec.normalize();
+
+    const sideVec = new THREE.Vector3();
+    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
+
+    if (this.moveState.forward) this.velocity.add(forwardVec.clone().multiplyScalar(moveSpeed * delta * 40));
+    if (this.moveState.backward) this.velocity.add(forwardVec.clone().multiplyScalar(-moveSpeed * delta * 40));
+    if (this.moveState.left) this.velocity.add(sideVec.clone().multiplyScalar(moveSpeed * delta * 40));
+    if (this.moveState.right) this.velocity.add(sideVec.clone().multiplyScalar(-moveSpeed * delta * 40));
+
+    // Head Bobbing & Strafe Tilt
+    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
+    if (isMoving && this.isGrounded) {
+      this.bobTimer += delta * (this.moveState.sprint ? 14 : 10);
+      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.04;
+    } else {
+      this.bobTimer = 0;
+    }
+
+    let targetTilt = 0;
+    if (this.moveState.left) targetTilt = 0.02;
+    if (this.moveState.right) targetTilt = -0.02;
+    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 10);
+    this.camera.rotation.z = this.cameraTilt;
+
+    // Check Landing Impact
+    if (!this.wasGrounded && this.isGrounded) {
+      sounds.playLanding();
+      this.screenShake = 0.12;
+    }
+    this.wasGrounded = this.isGrounded;
+===
+    let baseSpeed = this.moveState.sprint ? 15.5 : 9.8;
+    if (state.powerup.type === 'speed') baseSpeed *= 1.4;
+
+    // Responsive ground vs air friction and acceleration tuning
+    const groundFriction = 12.0;
+    const airFriction = 2.0;
+    const currentFriction = this.isGrounded ? groundFriction : airFriction;
+
+    // Apply friction decay
+    this.velocity.x -= this.velocity.x * currentFriction * delta;
+    this.velocity.z -= this.velocity.z * currentFriction * delta;
+
+    // Gravity (with snappy apex acceleration for crisp jump feel)
+    const gravity = this.velocity.y < 0 ? 32 : 26;
+    this.velocity.y -= gravity * delta;
+
+    // Coyote time tracking
+    if (this.isGrounded) {
+      this.coyoteTime = 0.12;
+    } else {
+      this.coyoteTime = Math.max(0, this.coyoteTime - delta);
+    }
+
+    // Buffer jump handle
+    if (this.jumpRequested && (this.isGrounded || this.coyoteTime > 0)) {
+      this.velocity.y = 9.8;
+      this.isGrounded = false;
+      this.coyoteTime = 0;
+      sounds.playJump();
+    }
+    this.jumpRequested = false;
+
+    // Direct vectors relative to camera orientation
+    const forwardVec = new THREE.Vector3();
+    this.camera.getWorldDirection(forwardVec);
+    forwardVec.y = 0;
+    forwardVec.normalize();
+
+    const sideVec = new THREE.Vector3();
+    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
+
+    const inputDir = new THREE.Vector3();
+    if (this.moveState.forward) inputDir.add(forwardVec);
+    if (this.moveState.backward) inputDir.add(forwardVec.clone().negate());
+    if (this.moveState.left) inputDir.add(sideVec);
+    if (this.moveState.right) inputDir.add(sideVec.clone().negate());
+
+    if (inputDir.lengthSq() > 0) {
+      inputDir.normalize();
+      const accelRate = this.isGrounded ? 55.0 : 18.0;
+      this.velocity.add(inputDir.multiplyScalar(baseSpeed * accelRate * delta));
+
+      // Clamp horizontal speed for precise handling
+      const horizVel = new THREE.Vector3(this.velocity.x, 0, this.velocity.z);
+      const maxAllowedSpeed = baseSpeed * (state.isDashing ? 1.8 : 1.25);
+      if (horizVel.length() > maxAllowedSpeed) {
+        horizVel.normalize().multiplyScalar(maxAllowedSpeed);
+        this.velocity.x = horizVel.x;
+        this.velocity.z = horizVel.z;
+      }
+    }
+
+    // Dynamic Head Bobbing & Responsive Strafe Tilt
+    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
+    if (isMoving && this.isGrounded) {
+      this.bobTimer += delta * (this.moveState.sprint ? 16 : 11);
+      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.05;
+    } else {
+      this.bobTimer = 0;
+    }
+
+    let targetTilt = 0;
+    if (this.moveState.left) targetTilt = 0.032;
+    if (this.moveState.right) targetTilt = -0.032;
+    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 12);
+    this.camera.rotation.z = this.cameraTilt;
+
+    // Check Landing Impact & Dash state expiration
+    if (state.isDashing) {
+      state.dashDuration -= delta;
+      if (state.dashDuration <= 0) {
+        state.isDashing = false;
+      }
+    }
+
+    if (!this.wasGrounded && this.isGrounded) {
+      sounds.playLanding();
+      this.screenShake = 0.14;
+    }
+    this.wasGrounded = this.isGrounded;
+>>>>
 
     // Raycaster for shooting
     this.raycaster = new THREE.Raycaster();
