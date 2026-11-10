@@ -415,4 +415,91 @@ kbd {
 @keyframes blink {
   0% { opacity: 0.3; }
   100% { opacity: 1; }
+}/* Weapon Selector Bar */
+#weapon-bar {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.weapon-slot {
+  background: rgba(8, 15, 30, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.weapon-slot.active {
+  opacity: 1;
+  border-color: #00f0ff;
+  background: rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+.slot-key {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.slot-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #c0e0ff;
+}
+
+/* Audio Toggle */
+.audio-toggle-container {
+  margin-bottom: 20px;
+}
+
+.audio-checkbox {
+  font-size: 13px;
+  color: #88aacc;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audio-checkbox input {
+  accent-color: #00f0ff;
+  cursor: pointer;
+}
+
+/* Damage Numbers */
+.damage-popup {
+  position: absolute;
+  font-weight: 900;
+  font-size: 20px;
+  color: #ffaa00;
+  text-shadow: 0 0 8px #ff5500;
+  pointer-events: none;
+  z-index: 15;
+  transform: translate(-50%, -50%);
+  animation: floatUp 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+.damage-popup.headshot {
+  color: #ff0055;
+  font-size: 26px;
+  text-shadow: 0 0 12px #ff0055;
+}
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -100px) scale(1.3); }
 }

@@ -40,6 +40,26 @@
           <span class="hud-title">SCORE</span>
           <span id="score-val" class="hud-value">0</span>
         </div>
+        <div class="hud-card">
+          <span class="hud-title">HIGH SCORE</span>
+          <span id="high-score-val" class="hud-value">0</span>
+        </div>
+      </div>
+
+      <!-- Weapon Selector HUD Bar -->
+      <div id="weapon-bar">
+        <div class="weapon-slot active" id="wslot-0">
+          <span class="slot-key">1</span>
+          <span class="slot-name">PLASMA RIFLE</span>
+        </div>
+        <div class="weapon-slot" id="wslot-1">
+          <span class="slot-key">2</span>
+          <span class="slot-name">CYBER SHOTGUN</span>
+        </div>
+        <div class="weapon-slot" id="wslot-2">
+          <span class="slot-key">3</span>
+          <span class="slot-name">RAIL CANNON</span>
+        </div>
       </div>
 
       <!-- Center Notifications -->
@@ -89,9 +109,16 @@
           <div class="ctrl-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</div>
           <div class="ctrl-item"><kbd>MOUSE</kbd> Aim Camera</div>
           <div class="ctrl-item"><kbd>LEFT CLICK</kbd> Shoot</div>
-          <div class="ctrl-item"><kbd>R</kbd> Reload Weapon</div>
+          <div class="ctrl-item"><kbd>RIGHT CLICK</kbd> Aim Sights</div>
+          <div class="ctrl-item"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> / Scroll Weapon</div>
+          <div class="ctrl-item"><kbd>R</kbd> Reload</div>
           <div class="ctrl-item"><kbd>SPACE</kbd> Jump</div>
           <div class="ctrl-item"><kbd>SHIFT</kbd> Sprint</div>
+        </div>
+        <div class="audio-toggle-container">
+          <label class="audio-checkbox">
+            <input type="checkbox" id="bgm-toggle" checked> Enable Synth Beat Engine
+          </label>
         </div>
 
         <button id="start-btn" class="btn">ENGAGE SIMULATION</button>
@@ -104,6 +131,7 @@
         <h1 class="game-title danger-title">SYSTEM TERMINATED</h1>
         <div class="stats-summary">
           <div class="stat-row"><span>Final Score:</span><strong id="final-score">0</strong></div>
+          <div class="stat-row"><span>High Score:</span><strong id="overlay-high-score">0</strong></div>
           <div class="stat-row"><span>Waves Cleared:</span><strong id="final-wave">0</strong></div>
           <div class="stat-row"><span>Drones Destroyed:</span><strong id="final-kills">0</strong></div>
         </div>
