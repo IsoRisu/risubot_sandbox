@@ -298,13 +298,340 @@ console.log(`[Cyber Strike 3D] Loaded Engine Version: ${GAME_VERSION.toString()}
       </div>
     </div>
 
-    <!-- Pause Screen -->
+    <!-- Pause Screen & Settings Modal -->
     <div id="pause-screen" class="overlay hidden">
-      <div class="modal">
+      <div class="modal pause-modal">
         <h1 class="game-title">SIMULATION PAUSED</h1>
-        <p class="game-desc">CLICK ANYWHERE TO RESUME POINTER LOCK</p>
+        <p class="game-desc">CONFIG SYSTEM CONTROLS & PARAMETERS</p>
+
+        <div class="pause-menu-buttons">
+          <button id="resume-btn" class="btn">RESUME SIMULATION</button>
+          <button id="settings-open-btn" class="btn btn-secondary">SETTINGS</button>
+          <button id="main-menu-btn" class="btn btn-danger">MAIN MENU</button>
+        </div>
       </div>
     </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-screen" class="overlay hidden">
+      <div class="modal settings-modal-box">
+        <h1 class="game-title">SYSTEM SETTINGS</h1>
+        <p class="game-desc">ADJUST GAMEPLAY, AUDIO, GRAPHICS & CONTROLS</p>
+
+        <div class="settings-tabs">
+          <button class="tab-btn active" data-tab="gameplay-tab">GAMEPLAY</button>
+          <button class="tab-btn" data-tab="audio-tab">AUDIO</button>
+          <button class="tab-btn" data-tab="graphics-tab">GRAPHICS</button>
+          <button class="tab-btn" data-tab="controls-tab">CONTROLS</button>
+        </div>
+
+        <div class="settings-content">
+          <!-- Gameplay Tab -->
+          <div id="gameplay-tab" class="tab-pane active">
+            <div class="setting-row">
+              <label for="mouse-sens-slider">Mouse Sensitivity</label>
+              <div class="slider-group">
+                <input type="range" id="mouse-sens-slider" min="0.1" max="3.0" step="0.1" value="1.0">
+                <span id="mouse-sens-val">1.0</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label for="fov-slider">Field of View (FOV)</label>
+              <div class="slider-group">
+                <input type="range" id="fov-slider" min="60" max="110" step="1" value="75">
+                <span id="fov-val">75</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio Tab -->
+          <div id="audio-tab" class="tab-pane">
+            <div class="setting-row">
+              <label for="master-vol-slider">Master Volume</label>
+              <div class="slider-group">
+                <input type="range" id="master-vol-slider" min="0" max="1" step="0.05" value="0.8">
+                <span id="master-vol-val">80%</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label for="sfx-vol-slider">SFX Volume</label>
+              <div class="slider-group">
+                <input type="range" id="sfx-vol-slider" min="0" max="1" step="0.05" value="1.0">
+                <span id="sfx-vol-val">100%</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label for="bgm-vol-slider">Music (BGM) Volume</label>
+              <div class="slider-group">
+                <input type="range" id="bgm-vol-slider" min="0" max="1" step="0.05" value="0.7">
+                <span id="bgm-vol-val">70%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Graphics Tab -->
+          <div id="graphics-tab" class="tab-pane">
+            <div class="setting-row">
+              <label for="shadow-res-select">Shadow Map Resolution</label>
+              <select id="shadow-res-select" class="setting-select">
+                <option value="512">Low (512px)</option>
+                <option value="1024" selected>Medium (1024px)</option>
+                <option value="2048">High (2048px)</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label for="aa-toggle">Anti-Aliasing (FXAA/MSAA)</label>
+              <input type="checkbox" id="aa-toggle" checked class="setting-checkbox">
+            </div>
+            <div class="setting-row">
+              <label for="bloom-toggle">Bloom Post-Processing</label>
+              <input type="checkbox" id="bloom-toggle" checked class="setting-checkbox">
+            </div>
+          </div>
+
+          <!-- Controls Tab -->
+          <div id="controls-tab" class="tab-pane">
+            <p class="tab-instruction">Click a control box and press any key to rebind.</p>
+            <div class="keybinds-list">
+              <div class="keybind-row">
+                <span>Move Forward</span>
+                <button class="keybind-btn" data-action="forward">W</button>
+              </div>
+              <div class="keybind-row">
+                <span>Move Left</span>
+                <button class="keybind-btn" data-action="left">A</button>
+              </div>
+              <div class="keybind-row">
+                <span>Move Backward</span>
+                <button class="keybind-btn" data-action="backward">S</button>
+              </div>
+              <div class="keybind-row">
+                <span>Move Right</span>
+                <button class="keybind-btn" data-action="right">D</button>
+              </div>
+              <div class="keybind-row">
+                <span>Jump</span>
+                <button class="keybind-btn" data-action="jump">SPACE</button>
+              </div>
+              <div class="keybind-row">
+                <span>Sprint</span>
+                <button class="keybind-btn" data-action="sprint">SHIFT</button>
+              </div>
+              <div class="keybind-row">
+                <span>Cyber Dash</span>
+                <button class="keybind-btn" data-action="dash">E</button>
+              </div>
+              <div class="keybind-row">
+                <span>Reload</span>
+                <button class="keybind-btn" data-action="reload">R</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-footer">
+          <button id="settings-back-btn" class="btn btn-secondary">BACK</button>
+          <button id="settings-save-btn" class="btn">APPLY & SAVE</button>
+        </div>
+      </div>
+    </div>
+>>>>
+
+<<<EDIT path=style.css op=append
+/* Pause Menu & Settings Modal Styling */
+.pause-modal {
+  max-width: 440px;
+}
+
+.pause-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  background: linear-gradient(90deg, #3366ff, #00f0ff);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(51, 102, 255, 0.4);
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 0 24px rgba(51, 102, 255, 0.8);
+}
+
+.settings-modal-box {
+  max-width: 600px;
+  width: 95%;
+  text-align: left;
+  padding: 30px 40px;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  padding-bottom: 10px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #88aacc;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active, .tab-btn:hover {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.settings-content {
+  min-height: 260px;
+  max-height: 380px;
+  overflow-y: auto;
+  margin-bottom: 24px;
+  padding-right: 6px;
+}
+
+.tab-pane {
+  display: none;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tab-pane.active {
+  display: flex;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.setting-row label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c0d6ec;
+  letter-spacing: 1px;
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 220px;
+}
+
+.slider-group input[type="range"] {
+  flex: 1;
+  accent-color: #00f0ff;
+  cursor: pointer;
+}
+
+.slider-group span {
+  font-family: monospace;
+  font-size: 13px;
+  color: #00f0ff;
+  min-width: 42px;
+  text-align: right;
+}
+
+.setting-select {
+  background: rgba(8, 15, 30, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.setting-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #00f0ff;
+  cursor: pointer;
+}
+
+.tab-instruction {
+  font-size: 12px;
+  color: #7a9bbd;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.keybinds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.keybind-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.keybind-row span {
+  font-size: 13px;
+  color: #a0b8d0;
+}
+
+.keybind-btn {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 70px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.keybind-btn.listening {
+  background: rgba(255, 170, 0, 0.3);
+  border-color: #ffaa00;
+  color: #ffaa00;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.6);
+  animation: pulse 0.8s infinite alternate;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-footer .btn {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 14px;
+}
+>>>>
   </div>
 
   <script src="game.js"></script>

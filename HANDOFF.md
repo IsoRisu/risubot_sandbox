@@ -2,15 +2,12 @@
 
 ## What this run did
 
-- Included Three
-- js postprocessing addon scripts in index
-- html for EffectComposer, RenderPass, UnrealBloomPass, and FilmPass to enable high-end cyber strike neon bloom and visual effects
+- Added in-game settings modal HTML structure in index
+- html and comprehensive CSS styling for pause menu, settings tabs, sliders, graphics quality toggles, and keybinding remapping
 
 ## What the next run should do
 
-- Initialize EffectComposer, RenderPass, and UnrealBloomPass in game.js setup/renderer creation
-- Configure film grain and dynamic depth-of-field (or custom post-processing passes) for ADS states
-- Update animation/render loop to use composer.render() instead of renderer.render() and handle window resizing correctly
+- Implement pause state, ESC key listener, mouse sensitivity handling, volume controls, graphics quality settings, and keybinding remapping in game.js
 
 ## Caveats
 
