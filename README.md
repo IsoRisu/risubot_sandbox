@@ -85,9 +85,28 @@ Building upon the robust foundation of **CYBER STRIKE 3D** (v1.2.0), the improve
 ### 3. Future Gameplay Expansion & AI
 - **Advanced Enemy Behaviors**:
   - Introduce dynamic flanking, squad coordination, cover-seeking routines, and variable speed scaling based on active wave threats.
+  - Implement boss-specific phase transitions, minion summoning mechanics, and reactive dodge maneuvers against high-velocity projectiles.
 - **Weapons & Tactical Depth**:
   - Add alternative fire modes, heat buildup/overheat mechanics for energy weapons, and between-wave tactical upgrade stations.
+  - Introduce consumable utility items (e.g., EMP grenades, nano-shields, tactical stims) and weapon mod attachments.
 - **Environment Interactivity**:
   - Expand destructible cover, dynamic bullet decals, and reactive environmental lighting shifts as higher waves progress.
+  - Add hazard zones (laser grids, toxic acid pools, electrical conduits) that can be triggered against both players and enemies.
+- **Multiplayer & Co-op Prototyping**:
+  - Investigate WebRTC peer-to-peer architecture for 2-4 player cooperative survival modes and synchronized wave scaling.
+
+### 4. Technical Debt, Bugs & Quality Assurance Fixes
+- **Audio Concurrency & Clipping Fixes**:
+  - *Issue*: Rapid firing high-rate-of-fire weapons (Pulse SMG) can occasionally cause Web Audio buffer node saturation and minor audio crackling.
+  - *Fix*: Implement a dedicated voice allocation pool and compressor node limiter in the synth audio engine.
+- **Shadow Map Flickering**:
+  - *Issue*: Directional shadow maps artifact or cascade-shift during rapid camera rotations and high FOV adjustments.
+  - *Fix*: Optimize shadow camera frustums, bias values, and implement PCF soft shadow filtering tuned for dynamic performance modes.
+- **Mobile Touch Controls & Responsive UI**:
+  - *Issue*: Current control scheme relies strictly on desktop keyboard/mouse and `ESC` menu toggles.
+  - *Fix*: Develop virtual dual-joystick touch controls and adaptive HUD layout for tablet and mobile browser compatibility.
+- **Memory Leak Diagnostics**:
+  - *Issue*: Extended survival sessions (>30 waves) show gradual memory creep due to disposed material/geometry caching in Three.js renderer.
+  - *Fix*: Implement strict cleanup hooks and explicit `dispose()` routines for all procedural geometries and texture atlases upon wave resets or level unloads.
 >>>>
 >>>>
