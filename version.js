@@ -6,7 +6,7 @@
 const GAME_VERSION = {
   major: 1,
   minor: 2,
-  patch: 1,
+  patch: 2,
   tag: 'INTERACTIVE',
   toString() {
     return `v${this.major}.${this.minor}.${this.patch}-${this.tag}`;

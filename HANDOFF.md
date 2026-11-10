@@ -2,13 +2,15 @@
 
 ## What this run did
 
-- Implemented Leaderboards & Progression UI elements in index
-- html and CSS styling in style
-- css for local stats tracking and achievement badges
+- game
+- js is over the size limit and cannot be edited directly; updating version patch level
 
 ## What the next run should do
 
-- Update game.js to track stats (accuracy, headshots, fastest wave clear time) and check/unlock achievements, storing them in localStorage
+- Implement object pooling for bullet tracer meshes in game.js
+- Implement object pooling for weapon projectile instances in game.js
+- Implement object pooling for enemy debris in game.js
+- Test and verify performance and GC reduction
 
 ## Caveats
 
