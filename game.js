@@ -520,41 +520,206 @@ class Game {
 
   initThree() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x050a14);
-    this.scene.fog = new THREE.FogExp2(0x050a14, 0.025);
+    this.scene.background = new THREE.Color(0x02050a);
+    this.scene.fog = new THREE.FogExp2(0x02050a, 0.022);
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
     this.camera.position.set(0, this.playerHeight, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0x223344, 1.2);
+    // Enhanced Multi-Point Neon Lighting
+    const ambientLight = new THREE.AmbientLight(0x0f1d38, 1.5);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x00f0ff, 1.5);
-    dirLight.position.set(20, 40, 20);
+    const dirLight = new THREE.DirectionalLight(0x00f0ff, 2.2);
+    dirLight.position.set(30, 50, 30);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.mapSize.width = 4096;
+    dirLight.shadow.mapSize.height = 4096;
+    dirLight.shadow.bias = -0.0005;
     dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 100;
-    const d = 40;
+    dirLight.shadow.camera.far = 120;
+    const d = 45;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
     this.scene.add(dirLight);
 
-    // Secondary warm rim light
-    const rimLight = new THREE.DirectionalLight(0xff0055, 0.8);
-    rimLight.position.set(-20, 20, -20);
-    this.scene.add(rimLight);
+    // Cyber Rim Lights for vivid neon highlights
+    const rimLight1 = new THREE.DirectionalLight(0xff0055, 1.8);
+    rimLight1.position.set(-30, 25, -30);
+    this.scene.add(rimLight1);
+
+    const rimLight2 = new THREE.DirectionalLight(0x00ff88, 1.2);
+    rimLight2.position.set(30, 20, -30);
+    this.scene.add(rimLight2);
+
+    // Dynamic Atmospheric Point Lights around arena
+    const pointLightsData = [
+      { pos: [-35, 10, -35], color: 0x00f0ff, intensity: 2.0, dist: 50 },
+      { pos: [35, 10, -35], color: 0xff0055, intensity: 2.0, dist: 50 },
+      { pos: [-35, 10, 35], color: 0x00ff88, intensity: 2.0, dist: 50 },
+      { pos: [35, 10, 35], color: 0xffaa00, intensity: 2.0, dist: 50 },
+      { pos: [0, 12, 0], color: 0x00f0ff, intensity: 3.0, dist: 65 }
+    ];
+
+    pointLightsData.forEach(pl => {
+      const light = new THREE.PointLight(pl.color, pl.intensity, pl.dist);
+      light.position.set(...pl.pos);
+      this.scene.add(light);
+    });
   }
+>>>>
+
+<<<EDIT path=game.js op=replace
+    const floorMat = new THREE.MeshStandardMaterial({
+      map: floorTexture,
+      roughness: 0.4,
+      metalness: 0.6
+    });
+===
+    const floorMat = new THREE.MeshStandardMaterial({
+      map: floorTexture,
+      roughness: 0.25,
+      metalness: 0.85,
+      emissive: 0x001133,
+      emissiveIntensity: 0.2
+    });
+>>>>
+
+<<<EDIT path=game.js op=replace
+  createSparks(pos, colorHex) {
+    for (let i = 0; i < 8; i++) {
+      const geo = new THREE.SphereGeometry(0.04, 4, 4);
+      const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(pos);
+      this.scene.add(p);
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 6,
+        (Math.random() - 0.5) * 6,
+        (Math.random() - 0.5) * 6
+      );
+
+      this.particles.push({ mesh: p, vel: vel, life: 0.25 });
+    }
+  }
+
+  createExplosion(pos) {
+    for (let i = 0; i < 24; i++) {
+      const size = 0.08 + Math.random() * 0.12;
+      const geo = new THREE.BoxGeometry(size, size, size);
+      const mat = new THREE.MeshBasicMaterial({ color: Math.random() < 0.5 ? 0xff0044 : 0x00f0ff });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(pos);
+      p.position.y += 1.0;
+      this.scene.add(p);
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 10,
+        Math.random() * 8 + 2,
+        (Math.random() - 0.5) * 10
+      );
+
+      this.particles.push({ mesh: p, vel: vel, life: 0.6 });
+    }
+  }
+===
+  createSparks(pos, colorHex) {
+    for (let i = 0; i < 16; i++) {
+      const size = 0.03 + Math.random() * 0.04;
+      const geo = new THREE.SphereGeometry(size, 6, 6);
+      const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 1.0 });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(pos);
+      this.scene.add(p);
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10 + 2,
+        (Math.random() - 0.5) * 10
+      );
+
+      this.particles.push({ mesh: p, vel: vel, life: 0.4 });
+    }
+  }
+
+  createExplosion(pos) {
+    // Add flash point light at explosion center
+    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
+    expLight.position.copy(pos);
+    expLight.position.y += 1.0;
+    this.scene.add(expLight);
+    setTimeout(() => this.scene.remove(expLight), 100);
+
+    for (let i = 0; i < 40; i++) {
+      const size = 0.06 + Math.random() * 0.18;
+      const geo = Math.random() < 0.5 ? new THREE.BoxGeometry(size, size, size) : new THREE.SphereGeometry(size, 6, 6);
+      const color = Math.random() < 0.4 ? 0xff0055 : (Math.random() < 0.7 ? 0x00f0ff : 0xffaa00);
+      const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 1.0 });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(pos);
+      p.position.y += 1.0;
+      this.scene.add(p);
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 16,
+        Math.random() * 12 + 2,
+        (Math.random() - 0.5) * 16
+      );
+
+      this.particles.push({ mesh: p, vel: vel, life: 0.75 });
+    }
+  }
+>>>>
+
+<<<EDIT path=style.css op=append
+/* High-End Cyberpunk Visual Aesthetics & Glow Enhancements */
+body {
+  background: radial-gradient(circle at center, #0a1428 0%, #02050a 100%);
+}
+
+#game-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 3px 100%;
+  z-index: 6;
+  opacity: 0.6;
+}
+
+.hud-card, .status-block, #radar-container, #boss-bar-container {
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.1);
+}
+
+.hud-value {
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+}
+
+.btn {
+  background: linear-gradient(90deg, #00f0ff, #00d2ff, #0088ff);
+  background-size: 200% auto;
+  animation: glowShift 4s linear infinite;
+}
+
+@keyframes glowShift {
+  0% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+>>>>
 
   initControls() {
     this.controls = new THREE.PointerLockControls(this.camera, document.body);
