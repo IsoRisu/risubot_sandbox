@@ -6,10 +6,10 @@
 const GAME_VERSION = {
   major: 1,
   minor: 2,
-  patch: 0,
-  tag: 'STABLE',
+  patch: 1,
+  tag: 'INTERACTIVE',
   toString() {
-    return `v${this.major}.${this.minor}.${this.patch}`;
+    return `v${this.major}.${this.minor}.${this.patch}-${this.tag}`;
   }
 };
 
