@@ -55,3 +55,51 @@ To bump versions for releases, update `version.js` and tag your Git commit accor
 git tag -a v1.2.0 -m "Release v1.2.0: Enhanced UI & Combat Polish"
 git push origin v1.2.0
 ```
+
+## Improvement & Optimization Plan
+
+Based on a thorough review of `game.js`, `index.html`, `style.css`, and architectural patterns, the following comprehensive improvement plan has been formulated to elevate **CYBER STRIKE 3D** to production-grade quality.
+
+---
+
+### 1. Performance & Architecture Bottlenecks
+- **Garbage Collection (GC) Pressure**: 
+  - *Issue*: Spawning particles (`SphereGeometry`, `BoxGeometry`, `MeshBasicMaterial`) and rendering tracer lines / damage popups creates high transient object churn on every frame and gunshot.
+  - *Plan*: Implement object pooling for particles, floating damage popups, and reusable geometry/material instances.
+- **Raycasting & Collision Overhead**: 
+  - *Issue*: `raycaster.intersectObjects(this.scene.children, true)` checks every scene node and child recursively on every shot.
+  - *Plan*: Isolate enemy meshes and static obstacles into dedicated `THREE.Group` or BVH/Octree acceleration structures, bypassing full scene traversal.
+- **Audio Context Management**:
+  - *Issue*: Sound effects dynamically create oscillators and gain nodes without centralized recycling limits.
+  - *Plan*: Add a sound concurrency limiter/pool to prevent audio stutter or resource leaks during chaotic multi-kill moments.
+
+---
+
+### 2. Gameplay Balance & Combat Mechanics
+- **Enemy Variety & AI Behaviors**:
+  - *Issue*: Current enemies (Scout, Tank, Shooter, Dreadnought Boss) follow simple direct-line tracking and stationary shooting loops.
+  - *Plan*: Introduce flanking AI behaviors, strafing maneuvers, cover-seeking logic, and dynamic difficulty scaling based on player accuracy and movement speed.
+- **Weapon Meta & Progression**:
+  - *Issue*: Ammo economy is static across waves, and weapon switching lacks tactical depth (e.g. reload cancellation or alt-fire modes).
+  - *Plan*: Add weapon upgrade stations between waves, thermal/energy heat buildup mechanics for energy weapons, and distinct clip/reserve scaling.
+
+---
+
+### 3. Visual Fidelity & Post-Processing
+- **Post-Processing Pipeline**:
+  - *Issue*: Relying solely on basic WebGL renderer tone mapping without bloom, chromatic aberration, or motion blur.
+  - *Plan*: Integrate Three.js `EffectComposer` with `UnrealBloomPass` for neon glow highlights, film grain shaders, and dynamic depth-of-field during Aim Down Sights (ADS).
+- **Environment Interactivity**:
+  - *Issue*: Static walls and obstacles do not react to bullet impacts beyond spark particles.
+  - *Plan*: Add scorch marks, dynamic decals, destructible cover crates, and volumetric lighting/fog density shifts as waves progress.
+
+---
+
+### 4. UI/UX & Quality of Life (QoL)
+- **Settings Menu**:
+  - *Issue*: Limited configuration options (only a BGM toggle exists).
+  - *Plan*: Add an in-game settings modal (Press `ESC` to pause) allowing mouse sensitivity sliders, master volume controls, graphic quality toggles (shadow map resolution, anti-aliasing), and keybinding remapping.
+- **Leaderboards & Progression**:
+  - *Issue*: High scores are stored solely in `localStorage` without persistent online leaderboards or wave milestone unlocks.
+  - *Plan*: Implement local stats tracking (accuracy percentage, total headshots, fastest wave clear time) and achievement badges.
+>>>>
