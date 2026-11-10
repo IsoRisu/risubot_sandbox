@@ -1525,63 +1525,100 @@ body {
     else sounds.playPulseSMG();
 
     this.muzzleFlashLight.color.setHex(weapon.color);
-    this.muzzleFlashLight.intensity = 4;
+    this.muzzleFlashLight.intensity = 5;
     this.muzzleFlashMesh.material.opacity = 1;
     setTimeout(() => {
       this.muzzleFlashLight.intensity = 0;
       this.muzzleFlashMesh.material.opacity = 0;
-    }, 50);
+    }, 45);
 
-    this.weaponRecoil.z = weapon.recoilZ;
-    this.weaponRecoil.rotX = weapon.recoilRot;
-    this.screenShake = weapon.recoilZ * 0.4;
+    // Aim down sights reduces spread and recoil for superior precision
+    const aimMultiplier = state.isAiming ? 0.5 : 1.0;
+
+    this.weaponRecoil.z = weapon.recoilZ * aimMultiplier;
+    this.weaponRecoil.rotX = weapon.recoilRot * aimMultiplier;
+    this.screenShake = weapon.recoilZ * 0.45 * aimMultiplier;
+
+    // Collect muzzle world position for authentic tracer origin
+    const muzzleWorldPos = new THREE.Vector3();
+    this.muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
 
     for (let p = 0; p < weapon.pellets; p++) {
-      const spreadX = (Math.random() - 0.5) * weapon.spread;
-      const spreadY = (Math.random() - 0.5) * weapon.spread;
+      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
       this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
 
+      // Collect all enemy meshes and environment obstacles for precise hitscan raycasting
       const enemyMeshes = this.enemies.map(e => e.mesh);
-      const intersects = this.raycaster.intersectObjects(enemyMeshes, true);
+      const enemyIntersects = this.raycaster.intersectObjects(enemyMeshes, true);
+      const obstacleIntersects = this.raycaster.intersectObjects(this.scene.children, true);
 
-      if (intersects.length > 0) {
-        const hit = intersects[0];
+      // Filter obstacle intersects to only environment geometry (exclude enemies/particles)
+      const validObstacles = obstacleIntersects.filter(hit => {
         let obj = hit.object;
-        const isHeadshot = obj.name === 'head';
+        while (obj.parent && obj !== this.scene) {
+          if (this.enemies.some(e => e.mesh === obj)) return false;
+          obj = obj.parent;
+        }
+        return true;
+      });
+
+      let hitPoint = null;
+      let hitEnemy = null;
+      let isHeadshot = false;
+      let closestDistance = Infinity;
+
+      if (enemyIntersects.length > 0) {
+        closestDistance = enemyIntersects[0].distance;
+        hitPoint = enemyIntersects[0].point;
+        let obj = enemyIntersects[0].object;
+        isHeadshot = obj.name === 'head';
         while (obj.parent && !this.enemies.some(e => e.mesh === obj)) {
           obj = obj.parent;
         }
-        const enemy = this.enemies.find(e => e.mesh === obj);
-        if (enemy) {
-          const mult = (isHeadshot ? 2.0 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
-          const dmg = Math.round(weapon.damage * mult * (0.9 + Math.random() * 0.2));
-          enemy.hp -= dmg;
+        hitEnemy = this.enemies.find(e => e.mesh === obj);
+      }
+
+      // Check if wall/obstacle is closer than the enemy hit
+      if (validObstacles.length > 0 && validObstacles[0].distance < closestDistance) {
+        hitPoint = validObstacles[0].point;
+        hitEnemy = null;
+        isHeadshot = false;
+      } else if (!hitPoint && validObstacles.length > 0) {
+        hitPoint = validObstacles[0].point;
+      }
+
+      if (hitPoint) {
+        if (hitEnemy) {
+          const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
+          const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
+          hitEnemy.hp -= dmg;
           sounds.playHit();
-          this.triggerHitMarker();
-          this.showDamagePopup(hit.point, dmg, isHeadshot);
-          this.createSparks(hit.point, weapon.color);
+          this.triggerHitMarker(isHeadshot);
+          this.showDamagePopup(hitPoint, dmg, isHeadshot);
+          this.createSparks(hitPoint, weapon.color);
 
           if (state.currentWeapon === 2) {
-            this.createRailgunBeam(this.camera.position.clone().add(new THREE.Vector3(0.2, -0.2, -0.4)), hit.point);
+            this.createRailgunBeam(muzzleWorldPos, hitPoint);
           } else {
-            this.createTracerLine(this.weaponGroup.position, hit.point, weapon.color);
+            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
           }
 
-          if (enemy === state.boss) {
-            const fill = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
+          if (hitEnemy === state.boss) {
+            const fill = Math.max(0, (hitEnemy.hp / hitEnemy.maxHp) * 100);
             document.getElementById('boss-bar-fill').style.width = `${fill}%`;
           }
 
-          if (enemy.hp <= 0) {
-            this.destroyEnemy(enemy);
+          if (hitEnemy.hp <= 0) {
+            this.destroyEnemy(hitEnemy);
           }
-        }
-      } else {
-        const wallIntersects = this.raycaster.intersectObjects(this.scene.children, false);
-        if (wallIntersects.length > 0) {
-          this.createSparks(wallIntersects[0].point, 0xffaa00);
+        } else {
+          // Environment wall/obstacle hit feedback
+          this.createSparks(hitPoint, 0xffaa00);
           if (state.currentWeapon === 2) {
-            this.createRailgunBeam(this.camera.position.clone().add(new THREE.Vector3(0.2, -0.2, -0.4)), wallIntersects[0].point);
+            this.createRailgunBeam(muzzleWorldPos, hitPoint);
+          } else {
+            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
           }
         }
       }
