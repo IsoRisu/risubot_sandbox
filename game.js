@@ -2495,7 +2495,7 @@ body {
     group.add(armorRing);
 
     group.position.set(0, 0, -dist);
-    this.scene.add(group);
+    this.enemyGroup.add(group);
 
     const bossObj = {
       mesh: group,
@@ -2504,9 +2504,12 @@ body {
       type: 'boss',
       hp: hp,
       maxHp: hp,
-      speed: 2.5,
+      speed: 2.8,
       lastAttack: 0,
-      attackCooldown: 1200
+      attackCooldown: 1000,
+      stateTimer: 0,
+      strafeDir: Math.random() < 0.5 ? 1 : -1,
+      flankAngle: Math.random() * Math.PI * 2
     };
 
     this.enemies.push(bossObj);
@@ -2516,6 +2519,586 @@ body {
     document.getElementById('boss-bar-container').classList.remove('hidden');
     document.getElementById('boss-bar-fill').style.width = '100%';
   }
+>>>>
+
+<<<EDIT path=game.js op=replace
+  spawnEnemy() {
+    const dist = 22 + Math.random() * 20;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * dist;
+    const z = Math.sin(angle) * dist;
+
+    const types = ['scout', 'tank', 'shooter'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const group = new THREE.Group();
+
+    let colorHex = 0xff0044;
+    let radius = 0.7;
+    let hp = 50 + state.wave * 15;
+    let speed = 3.5 + Math.min(state.wave * 0.3, 4);
+
+    if (type === 'scout') {
+      colorHex = 0xff00bb;
+      radius = 0.5;
+      hp *= 0.6;
+      speed *= 1.4;
+    } else if (type === 'tank') {
+      colorHex = 0xffaa00;
+      radius = 1.1;
+      hp *= 2.2;
+      speed *= 0.7;
+    } else if (type === 'shooter') {
+      colorHex = 0x00f0ff;
+      radius = 0.8;
+    }
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.3, metalness: 0.8 })
+    );
+    core.position.y = radius + 0.3;
+    core.castShadow = true;
+    group.add(core);
+
+    // Glowing Head / Core
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.4, 12, 12),
+      new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.2 })
+    );
+    head.position.set(0, radius + 0.4, radius * 0.75);
+    head.name = 'head';
+    group.add(head);
+
+    const ringGeo = new THREE.TorusGeometry(radius * 1.4, 0.05, 8, 24);
+    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true }));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = radius + 0.3;
+    group.add(ring);
+
+    group.position.set(x, 0, z);
+    this.scene.add(group);
+
+    this.enemies.push({
+      mesh: group,
+      head: head,
+      ring: ring,
+      type: type,
+      hp: hp,
+      maxHp: hp,
+      speed: speed,
+      lastAttack: 0,
+      attackCooldown: type === 'shooter' ? 2200 : 1000
+    });
+  }
+===
+  spawnEnemy() {
+    const dist = 22 + Math.random() * 20;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * dist;
+    const z = Math.sin(angle) * dist;
+
+    const types = ['scout', 'tank', 'shooter'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const group = new THREE.Group();
+
+    let colorHex = 0xff0044;
+    let radius = 0.7;
+    let hp = (50 + state.wave * 15);
+    let speed = 3.5 + Math.min(state.wave * 0.3, 4);
+
+    if (type === 'scout') {
+      colorHex = 0xff00bb;
+      radius = 0.5;
+      hp *= 0.6;
+      speed *= 1.4;
+    } else if (type === 'tank') {
+      colorHex = 0xffaa00;
+      radius = 1.1;
+      hp *= 2.2;
+      speed *= 0.7;
+    } else if (type === 'shooter') {
+      colorHex = 0x00f0ff;
+      radius = 0.8;
+    }
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.3, metalness: 0.8 })
+    );
+    core.position.y = radius + 0.3;
+    core.castShadow = true;
+    group.add(core);
+
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.4, 12, 12),
+      new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.2 })
+    );
+    head.position.set(0, radius + 0.4, radius * 0.75);
+    head.name = 'head';
+    group.add(head);
+
+    const ringGeo = new THREE.TorusGeometry(radius * 1.4, 0.05, 8, 24);
+    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true }));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = radius + 0.3;
+    group.add(ring);
+
+    group.position.set(x, 0, z);
+    this.enemyGroup.add(group);
+
+    this.enemies.push({
+      mesh: group,
+      head: head,
+      ring: ring,
+      type: type,
+      hp: hp,
+      maxHp: hp,
+      speed: speed,
+      lastAttack: 0,
+      attackCooldown: type === 'shooter' ? 1800 : 900,
+      stateTimer: Math.random() * 3,
+      strafeDir: Math.random() < 0.5 ? 1 : -1,
+      flankOffset: (Math.random() - 0.5) * 6,
+      seekingCover: false
+    });
+  }
+>>>>
+
+<<<EDIT path=game.js op=replace
+  shoot() {
+    const now = performance.now();
+    const weapon = WEAPONS[state.currentWeapon];
+
+    if (now - this.lastShotTime < weapon.fireRate) return;
+    if (state.isReloading) return;
+
+    if (state.ammoClip <= 0) {
+      this.reloadWeapon();
+      return;
+    }
+
+    this.lastShotTime = now;
+    state.ammoClip--;
+    this.updateHUD();
+
+    if (state.currentWeapon === 0) sounds.playGunshot();
+    else if (state.currentWeapon === 1) sounds.playShotgun();
+    else if (state.currentWeapon === 2) sounds.playRailgun();
+    else sounds.playPulseSMG();
+
+    this.muzzleFlashLight.color.setHex(weapon.color);
+    this.muzzleFlashLight.intensity = 5;
+    this.muzzleFlashMesh.material.opacity = 1;
+    setTimeout(() => {
+      this.muzzleFlashLight.intensity = 0;
+      this.muzzleFlashMesh.material.opacity = 0;
+    }, 45);
+
+    // Aim down sights reduces spread and recoil for superior precision
+    const aimMultiplier = state.isAiming ? 0.5 : 1.0;
+
+    this.weaponRecoil.z = weapon.recoilZ * aimMultiplier;
+    this.weaponRecoil.rotX = weapon.recoilRot * aimMultiplier;
+    this.screenShake = weapon.recoilZ * 0.45 * aimMultiplier;
+
+    // Collect muzzle world position for authentic tracer origin
+    const muzzleWorldPos = new THREE.Vector3();
+    this.muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
+
+    for (let p = 0; p < weapon.pellets; p++) {
+      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
+
+      // Raycast against isolated enemy and obstacle groups directly, avoiding full scene traversal
+      const enemyIntersects = this.raycaster.intersectObject(this.enemyGroup, true);
+      const obstacleIntersects = this.raycaster.intersectObject(this.obstacleGroup, true);
+
+      let hitPoint = null;
+      let hitEnemy = null;
+      let isHeadshot = false;
+      let closestDistance = Infinity;
+
+      if (enemyIntersects.length > 0) {
+        closestDistance = enemyIntersects[0].distance;
+        hitPoint = enemyIntersects[0].point;
+        let obj = enemyIntersects[0].object;
+        isHeadshot = obj.name === 'head';
+        while (obj.parent && obj !== this.enemyGroup) {
+          obj = obj.parent;
+        }
+        hitEnemy = this.enemies.find(e => e.mesh === obj);
+      }
+
+      if (obstacleIntersects.length > 0 && obstacleIntersects[0].distance < closestDistance) {
+        hitPoint = obstacleIntersects[0].point;
+        hitEnemy = null;
+        isHeadshot = false;
+      } else if (!hitPoint && obstacleIntersects.length > 0) {
+        hitPoint = obstacleIntersects[0].point;
+      }
+
+      if (hitPoint) {
+        if (hitEnemy) {
+          const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
+          const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
+          hitEnemy.hp -= dmg;
+          sounds.playHit();
+          this.triggerHitMarker(isHeadshot);
+          this.showDamagePopup(hitPoint, dmg, isHeadshot);
+          this.createSparks(hitPoint, weapon.color);
+
+          if (state.currentWeapon === 2) {
+            this.createRailgunBeam(muzzleWorldPos, hitPoint);
+          } else {
+            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
+          }
+
+          if (hitEnemy === state.boss) {
+            const fill = Math.max(0, (hitEnemy.hp / hitEnemy.maxHp) * 100);
+            document.getElementById('boss-bar-fill').style.width = `${fill}%`;
+          }
+
+          if (hitEnemy.hp <= 0) {
+            this.destroyEnemy(hitEnemy);
+          }
+        } else {
+          // Environment wall/obstacle hit feedback
+          this.createSparks(hitPoint, 0xffaa00);
+          if (state.currentWeapon === 2) {
+            this.createRailgunBeam(muzzleWorldPos, hitPoint);
+          } else {
+            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
+          }
+        }
+      }
+    }
+
+    if (state.ammoClip === 0) {
+      this.reloadWeapon();
+    }
+  }
+===
+  shoot() {
+    const now = performance.now();
+    const weapon = WEAPONS[state.currentWeapon];
+
+    if (now - this.lastShotTime < weapon.fireRate) return;
+    if (state.isReloading) return;
+
+    if (state.ammoClip <= 0) {
+      this.reloadWeapon();
+      return;
+    }
+
+    this.lastShotTime = now;
+    state.ammoClip--;
+    this.updateHUD();
+
+    // Track dynamic accuracy stats
+    if (!state.playerStats) {
+      state.playerStats = { shotsFired: 0, shotsHit: 0, totalSpeed: 0, speedSamples: 0 };
+    }
+    state.playerStats.shotsFired++;
+
+    if (state.currentWeapon === 0) sounds.playGunshot();
+    else if (state.currentWeapon === 1) sounds.playShotgun();
+    else if (state.currentWeapon === 2) sounds.playRailgun();
+    else sounds.playPulseSMG();
+
+    this.muzzleFlashLight.color.setHex(weapon.color);
+    this.muzzleFlashLight.intensity = 5;
+    this.muzzleFlashMesh.material.opacity = 1;
+    setTimeout(() => {
+      this.muzzleFlashLight.intensity = 0;
+      this.muzzleFlashMesh.material.opacity = 0;
+    }, 45);
+
+    const aimMultiplier = state.isAiming ? 0.5 : 1.0;
+
+    this.weaponRecoil.z = weapon.recoilZ * aimMultiplier;
+    this.weaponRecoil.rotX = weapon.recoilRot * aimMultiplier;
+    this.screenShake = weapon.recoilZ * 0.45 * aimMultiplier;
+
+    const muzzleWorldPos = new THREE.Vector3();
+    this.muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
+
+    let shotLandedAny = false;
+
+    for (let p = 0; p < weapon.pellets; p++) {
+      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
+
+      const enemyIntersects = this.raycaster.intersectObject(this.enemyGroup, true);
+      const obstacleIntersects = this.raycaster.intersectObject(this.obstacleGroup, true);
+
+      let hitPoint = null;
+      let hitEnemy = null;
+      let isHeadshot = false;
+      let closestDistance = Infinity;
+
+      if (enemyIntersects.length > 0) {
+        closestDistance = enemyIntersects[0].distance;
+        hitPoint = enemyIntersects[0].point;
+        let obj = enemyIntersects[0].object;
+        isHeadshot = obj.name === 'head';
+        while (obj.parent && obj !== this.enemyGroup) {
+          obj = obj.parent;
+        }
+        hitEnemy = this.enemies.find(e => e.mesh === obj);
+      }
+
+      if (obstacleIntersects.length > 0 && obstacleIntersects[0].distance < closestDistance) {
+        hitPoint = obstacleIntersects[0].point;
+        hitEnemy = null;
+        isHeadshot = false;
+      } else if (!hitPoint && obstacleIntersects.length > 0) {
+        hitPoint = obstacleIntersects[0].point;
+      }
+
+      if (hitPoint) {
+        if (hitEnemy) {
+          shotLandedAny = true;
+          const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
+          const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
+          hitEnemy.hp -= dmg;
+          sounds.playHit();
+          this.triggerHitMarker(isHeadshot);
+          this.showDamagePopup(hitPoint, dmg, isHeadshot);
+          this.createSparks(hitPoint, weapon.color);
+
+          if (state.currentWeapon === 2) {
+            this.createRailgunBeam(muzzleWorldPos, hitPoint);
+          } else {
+            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
+          }
+
+          if (hitEnemy === state.boss) {
+            const fill = Math.max(0, (hitEnemy.hp / hitEnemy.maxHp) * 100);
+            document.getElementById('boss-bar-fill').style.width = `${fill}%`;
+          }
+
+          if (hitEnemy.hp <= 0) {
+            this.destroyEnemy(hitEnemy);
+          }
+        } else {
+          this.createSparks(hitPoint, 0xffaa00);
+          if (state.currentWeapon === 2) {
+            this.createRailgunBeam(muzzleWorldPos, hitPoint);
+          } else {
+            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
+          }
+        }
+      }
+    }
+
+    if (shotLandedAny) {
+      state.playerStats.shotsHit++;
+    }
+
+    if (state.ammoClip === 0) {
+      this.reloadWeapon();
+    }
+  }
+>>>>
+
+<<<EDIT path=game.js op=replace
+  updateEnemies(delta) {
+    const playerPos = this.camera.position;
+    const now = performance.now();
+
+    this.enemies.forEach(enemy => {
+      enemy.ring.rotation.z += delta * 2;
+
+      const ePos = enemy.mesh.position;
+      const dir = new THREE.Vector3().subVectors(playerPos, ePos);
+      dir.y = 0;
+      const dist = dir.length();
+      dir.normalize();
+
+      if (enemy.type === 'boss') {
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+        if (dist > 10) {
+          ePos.add(dir.multiplyScalar(enemy.speed * delta));
+        }
+        if (now - enemy.lastAttack > enemy.attackCooldown) {
+          enemy.lastAttack = now;
+          this.fireEnemyLaser(ePos);
+        }
+      } else if (enemy.type === 'shooter' && dist < 16 && dist > 7) {
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+        if (now - enemy.lastAttack > enemy.attackCooldown) {
+          enemy.lastAttack = now;
+          this.fireEnemyLaser(ePos);
+        }
+      } else if (dist > 1.8) {
+        ePos.add(dir.multiplyScalar(enemy.speed * delta));
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+      } else {
+        if (now - enemy.lastAttack > enemy.attackCooldown) {
+          enemy.lastAttack = now;
+          this.takeDamage(enemy.type === 'tank' ? 25 : 12);
+        }
+      }
+    });
+
+    // Update enemy projectiles
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const pr = this.projectiles[i];
+      pr.mesh.position.addScaledVector(pr.dir, pr.speed * delta);
+      if (pr.mesh.position.distanceTo(playerPos) < 1.2) {
+        this.takeDamage(16);
+        this.scene.remove(pr.mesh);
+        this.projectiles.splice(i, 1);
+      } else if (pr.mesh.position.length() > 120) {
+        this.scene.remove(pr.mesh);
+        this.projectiles.splice(i, 1);
+      }
+    }
+  }
+===
+  updateEnemies(delta) {
+    const playerPos = this.camera.position;
+    const now = performance.now();
+
+    // Dynamic Difficulty Scaling calculation based on player performance & movement speed
+    if (!state.playerStats) {
+      state.playerStats = { shotsFired: 0, shotsHit: 0, totalSpeed: 0, speedSamples: 0 };
+    }
+    const currentSpeed = Math.hypot(this.velocity.x, this.velocity.z);
+    state.playerStats.totalSpeed += currentSpeed;
+    state.playerStats.speedSamples++;
+
+    const accuracy = state.playerStats.shotsFired > 5 ? (state.playerStats.shotsHit / state.playerStats.shotsFired) : 0.5;
+    const avgSpeed = state.playerStats.speedSamples > 0 ? (state.playerStats.totalSpeed / state.playerStats.speedSamples) : 5.0;
+
+    // Difficulty multiplier ranges from 0.85 (struggling player) to 1.45 (highly skilled player)
+    const diffMultiplier = THREE.MathUtils.clamp(0.85 + (accuracy * 0.4) + (avgSpeed / 30), 0.8, 1.5);
+
+    this.enemies.forEach(enemy => {
+      enemy.ring.rotation.z += delta * 2;
+      enemy.stateTimer -= delta;
+
+      const ePos = enemy.mesh.position;
+      const toPlayer = new THREE.Vector3().subVectors(playerPos, ePos);
+      toPlayer.y = 0;
+      const dist = toPlayer.length();
+      const dir = toPlayer.clone().normalize();
+
+      // Flanking and Strafing vector calculation
+      const sideDir = new THREE.Vector3(-dir.z, 0, dir.x);
+
+      if (enemy.type === 'boss') {
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+        
+        // Boss advanced flanking & strafing pattern
+        if (enemy.stateTimer <= 0) {
+          enemy.stateTimer = 2.5 + Math.random() * 2;
+          enemy.strafeDir *= -1;
+        }
+
+        const effectiveSpeed = enemy.speed * diffMultiplier;
+        const strafeMovement = sideDir.clone().multiplyScalar(enemy.strafeDir * effectiveSpeed * 0.8 * delta);
+        ePos.add(strafeMovement);
+
+        if (dist > 14) {
+          ePos.add(dir.clone().multiplyScalar(effectiveSpeed * delta));
+        } else if (dist < 8) {
+          ePos.add(dir.clone().multiplyScalar(-effectiveSpeed * delta));
+        }
+
+        if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
+          enemy.lastAttack = now;
+          this.fireEnemyLaser(ePos);
+          // Dreadnought Boss secondary spread barrage
+          if (Math.random() < 0.4) {
+            setTimeout(() => this.fireEnemyLaser(ePos), 200);
+          }
+        }
+      } else if (enemy.type === 'shooter') {
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+
+        // Cover-seeking logic: If low health or player is too close, retreat toward obstacles
+        let targetPos = ePos.clone();
+        if (enemy.hp < enemy.maxHp * 0.35 && !enemy.seekingCover) {
+          enemy.seekingCover = true;
+          enemy.stateTimer = 3.0;
+        }
+
+        if (enemy.seekingCover) {
+          ePos.add(dir.clone().multiplyScalar(-enemy.speed * diffMultiplier * delta));
+          if (enemy.stateTimer <= 0) enemy.seekingCover = false;
+        } else {
+          // Strafing maneuver
+          if (enemy.stateTimer <= 0) {
+            enemy.stateTimer = 1.5 + Math.random() * 2;
+            enemy.strafeDir = Math.random() < 0.5 ? 1 : -1;
+          }
+          const strafeMove = sideDir.clone().multiplyScalar(enemy.strafeDir * enemy.speed * diffMultiplier * delta);
+          ePos.add(strafeMove);
+
+          if (dist > 15) {
+            ePos.add(dir.clone().multiplyScalar(enemy.speed * diffMultiplier * delta));
+          } else if (dist < 8) {
+            ePos.add(dir.clone().multiplyScalar(-enemy.speed * diffMultiplier * delta));
+          }
+        }
+
+        if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
+          enemy.lastAttack = now;
+          this.fireEnemyLaser(ePos);
+        }
+      } else if (enemy.type === 'scout') {
+        // Fast Flanking Scout behavior
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+
+        if (enemy.stateTimer <= 0) {
+          enemy.stateTimer = 2.0;
+          enemy.strafeDir *= -1;
+        }
+
+        const flankVec = sideDir.clone().multiplyScalar(enemy.strafeDir * enemy.speed * diffMultiplier * delta);
+        ePos.add(flankVec);
+
+        if (dist > 3.5) {
+          ePos.add(dir.clone().multiplyScalar(enemy.speed * diffMultiplier * delta));
+        } else {
+          if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
+            enemy.lastAttack = now;
+            this.takeDamage(10 * diffMultiplier);
+          }
+        }
+      } else {
+        // Tank Enemy behavior: direct relentless advance with occasional cover pause
+        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+        if (dist > 2.2) {
+          ePos.add(dir.clone().multiplyScalar(enemy.speed * diffMultiplier * delta));
+        } else {
+          if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
+            enemy.lastAttack = now;
+            this.takeDamage(22 * diffMultiplier);
+          }
+        }
+      }
+    });
+
+    // Update enemy projectiles with difficulty-scaled projectile speed
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const pr = this.projectiles[i];
+      const projSpeed = (pr.speed || 20) * diffMultiplier;
+      pr.mesh.position.addScaledVector(pr.dir, projSpeed * delta);
+      if (pr.mesh.position.distanceTo(playerPos) < 1.2) {
+        this.takeDamage(16 * diffMultiplier);
+        this.scene.remove(pr.mesh);
+        this.projectiles.splice(i, 1);
+      } else if (pr.mesh.position.length() > 120) {
+        this.scene.remove(pr.mesh);
+        this.projectiles.splice(i, 1);
+      }
+    }
+  }
+>>>>
 
   spawnEnemy() {
     const dist = 22 + Math.random() * 20;
