@@ -14,6 +14,81 @@
   <div id="game-container">
     <canvas id="game-canvas"></canvas>
 
+    <!-- Version Badge Overlay -->
+    <div id="game-version-badge">v1.2.0</div>
+>>>>
+
+<<<EDIT path=index.html op=replace
+        <button id="start-btn" class="btn">ENGAGE SIMULATION</button>
+      </div>
+    </div>
+===
+        <button id="start-btn" class="btn">ENGAGE SIMULATION</button>
+        <div id="menu-version">CYBER STRIKE ENGINE v1.2.0</div>
+      </div>
+    </div>
+>>>>
+
+<<<EDIT path=index.html op=replace
+  <script src="game.js"></script>
+</body>
+</html>
+===
+  <script src="version.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
+>>>>
+
+<<<EDIT path=style.css op=append
+/* Version Badges & Menu Version */
+#game-version-badge {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(0, 240, 255, 0.6);
+  background: rgba(8, 15, 30, 0.6);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+#menu-version {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #557799;
+  font-family: monospace;
+}
+>>>>
+
+<<<EDIT path=version.js op=create
+/**
+ * CYBER STRIKE 3D - Version Management System (Semantic Versioning)
+ * Version: 1.2.0
+ */
+
+const GAME_VERSION = {
+  major: 1,
+  minor: 2,
+  patch: 0,
+  tag: 'STABLE',
+  toString() {
+    return `v${this.major}.${this.minor}.${this.patch}-${this.tag}`;
+  }
+};
+
+window.GAME_VERSION = GAME_VERSION;
+console.log(`[Cyber Strike 3D] Loaded Engine Version: ${GAME_VERSION.toString()}`);
+
+>>>>
+
     <!-- Crosshair UI -->
     <div id="crosshair">
       <div class="ch-dot"></div>
