@@ -490,12 +490,254 @@ class Game {
     this.enemies = [];
     this.pickups = [];
     this.particles = [];
+    this.particlePool = [];
+    this.maxPoolSize = 150;
+
+    this.damagePopups = [];
+    this.damagePopupPool = [];
+    this.maxPopupPoolSize = 40;
+
+    // Reusable Geometries and Materials to eliminate per-frame/shot allocations
+    this.sharedGeos = {
+      sphereSmall: new THREE.SphereGeometry(0.04, 4, 4),
+      sphereMedium: new THREE.SphereGeometry(0.06, 6, 6),
+      boxSmall: new THREE.BoxGeometry(0.08, 0.08, 0.08),
+      boxMedium: new THREE.BoxGeometry(0.12, 0.12, 0.12)
+    };
+
+    this.sharedMaterials = {
+      sparkRed: new THREE.MeshBasicMaterial({ color: 0xff0044 }),
+      sparkCyan: new THREE.MeshBasicMaterial({ color: 0x00f0ff }),
+      sparkOrange: new THREE.MeshBasicMaterial({ color: 0xffaa00 }),
+      sparkWhite: new THREE.MeshBasicMaterial({ color: 0xffffff })
+    };
+
     this.projectiles = [];
     this.obstacles = []; // AABBs for collisions
 
     this.clock = new THREE.Clock();
     this.lastShotTime = 0;
     this.screenShake = 0;
+>>>>
+
+<<<EDIT path=game.js op=replace
+  createSparks(pos, colorHex) {
+    for (let i = 0; i < 16; i++) {
+      const size = 0.03 + Math.random() * 0.04;
+      const geo = new THREE.SphereGeometry(size, 6, 6);
+      const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 1.0 });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(pos);
+      this.scene.add(p);
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10 + 2,
+        (Math.random() - 0.5) * 10
+      );
+
+      this.particles.push({ mesh: p, vel: vel, life: 0.4 });
+    }
+  }
+
+  createExplosion(pos) {
+    // Add flash point light at explosion center
+    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
+    expLight.position.copy(pos);
+    expLight.position.y += 1.0;
+    this.scene.add(expLight);
+    setTimeout(() => this.scene.remove(expLight), 100);
+
+    for (let i = 0; i < 40; i++) {
+      const size = 0.06 + Math.random() * 0.18;
+      const geo = Math.random() < 0.5 ? new THREE.BoxGeometry(size, size, size) : new THREE.SphereGeometry(size, 6, 6);
+      const color = Math.random() < 0.4 ? 0xff0055 : (Math.random() < 0.7 ? 0x00f0ff : 0xffaa00);
+      const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 1.0 });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(pos);
+      p.position.y += 1.0;
+      this.scene.add(p);
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 16,
+        Math.random() * 12 + 2,
+        (Math.random() - 0.5) * 16
+      );
+
+      this.particles.push({ mesh: p, vel: vel, life: 0.75 });
+    }
+  }
+===
+  obtainParticle(geo, mat, pos, vel, life) {
+    let pObj;
+    if (this.particlePool.length > 0) {
+      pObj = this.particlePool.pop();
+      pObj.mesh.geometry = geo;
+      pObj.mesh.material = mat;
+      pObj.mesh.position.copy(pos);
+      pObj.mesh.visible = true;
+      pObj.vel.copy(vel);
+      pObj.life = life;
+      pObj.maxLife = life;
+    } else {
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(pos);
+      this.scene.add(mesh);
+      pObj = { mesh: mesh, vel: vel.clone(), life: life, maxLife: life };
+    }
+    this.particles.push(pObj);
+  }
+
+  createSparks(pos, colorHex) {
+    const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+    for (let i = 0; i < 10; i++) {
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 8 + 2,
+        (Math.random() - 0.5) * 8
+      );
+      this.obtainParticle(this.sharedGeos.sphereSmall, mat, pos, vel, 0.3);
+    }
+  }
+
+  createExplosion(pos) {
+    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
+    expLight.position.copy(pos);
+    expLight.position.y += 1.0;
+    this.scene.add(expLight);
+    setTimeout(() => this.scene.remove(expLight), 100);
+
+    const mats = [this.sharedMaterials.sparkRed, this.sharedMaterials.sparkCyan, this.sharedMaterials.sparkOrange];
+    const geos = [this.sharedGeos.boxSmall, this.sharedGeos.sphereMedium];
+
+    for (let i = 0; i < 24; i++) {
+      const geo = geos[Math.floor(Math.random() * geos.length)];
+      const mat = mats[Math.floor(Math.random() * mats.length)];
+      const spawnPos = pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 14,
+        Math.random() * 10 + 2,
+        (Math.random() - 0.5) * 14
+      );
+      this.obtainParticle(geo, mat, spawnPos, vel, 0.6);
+    }
+  }
+>>>>
+
+<<<EDIT path=game.js op=replace
+  showDamagePopup(worldPos, damage, isHeadshot) {
+    const screenVec = worldPos.clone().project(this.camera);
+    if (screenVec.z > 1) return;
+    const x = (screenVec.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(screenVec.y * 0.5) + 0.5) * window.innerHeight;
+
+    const pop = document.createElement('div');
+    pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
+    pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
+    pop.style.left = `${x}px`;
+    pop.style.top = `${y}px`;
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 600);
+  }
+
+  createTracerLine(start, end, colorHex) {
+    const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
+    const line = new THREE.Line(geo, mat);
+    this.scene.add(line);
+    setTimeout(() => this.scene.remove(line), 40);
+  }
+===
+  showDamagePopup(worldPos, damage, isHeadshot) {
+    const screenVec = worldPos.clone().project(this.camera);
+    if (screenVec.z > 1) return;
+    const x = (screenVec.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(screenVec.y * 0.5) + 0.5) * window.innerHeight;
+
+    let pop;
+    if (this.damagePopupPool.length > 0) {
+      pop = this.damagePopupPool.pop();
+      pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
+      pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
+      pop.style.display = 'block';
+      pop.style.left = `${x}px`;
+      pop.style.top = `${y}px`;
+    } else {
+      pop = document.createElement('div');
+      pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
+      pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
+      pop.style.left = `${x}px`;
+      pop.style.top = `${y}px`;
+      document.body.appendChild(pop);
+    }
+
+    const popupObj = { el: pop, life: 0.6 };
+    this.damagePopups.push(popupObj);
+  }
+
+  createTracerLine(start, end, colorHex) {
+    const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
+    const line = new THREE.Line(geo, mat);
+    this.scene.add(line);
+    setTimeout(() => {
+      this.scene.remove(line);
+      geo.dispose();
+      mat.dispose();
+    }, 40);
+  }
+>>>>
+
+<<<EDIT path=game.js op=replace
+  updateParticles(delta) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life -= delta;
+      p.mesh.position.addScaledVector(p.vel, delta);
+      p.mesh.scale.multiplyScalar(0.95);
+
+      if (p.life <= 0) {
+        this.scene.remove(p.mesh);
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+===
+  updateParticles(delta) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life -= delta;
+      p.mesh.position.addScaledVector(p.vel, delta);
+      p.mesh.scale.multiplyScalar(0.96);
+
+      if (p.life <= 0) {
+        p.mesh.visible = false;
+        p.mesh.scale.set(1, 1, 1);
+        this.particles.splice(i, 1);
+        if (this.particlePool.length < this.maxPoolSize) {
+          this.particlePool.push(p);
+        } else {
+          this.scene.remove(p.mesh);
+          p.mesh.geometry.dispose();
+        }
+      }
+    }
+
+    for (let i = this.damagePopups.length - 1; i >= 0; i--) {
+      const pop = this.damagePopups[i];
+      pop.life -= delta;
+      if (pop.life <= 0) {
+        pop.el.style.display = 'none';
+        this.damagePopups.splice(i, 1);
+        if (this.damagePopupPool.length < this.maxPopupPoolSize) {
+          this.damagePopupPool.push(pop.el);
+        } else {
+          pop.el.remove();
+        }
+      }
+    }
+  }
+>>>>
 
     // Movement physics & controls configuration
     this.moveState = { forward: false, backward: false, left: false, right: false, sprint: false };
