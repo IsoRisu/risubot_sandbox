@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBER STRIKE 3D - First Person Shooter</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- PointerLockControls CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Crosshair UI -->
+    <div id="crosshair">
+      <div class="ch-dot"></div>
+      <div class="ch-line ch-top"></div>
+      <div class="ch-line ch-bottom"></div>
+      <div class="ch-line ch-left"></div>
+      <div class="ch-line ch-right"></div>
+      <div id="hit-marker" class="hidden"></div>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div id="hud" class="hidden">
+      <!-- Top Info Bar -->
+      <div id="top-bar">
+        <div class="hud-card">
+          <span class="hud-title">WAVE</span>
+          <span id="wave-num" class="hud-value">1</span>
+        </div>
+        <div class="hud-card">
+          <span class="hud-title">HOSTILES</span>
+          <span id="enemy-count" class="hud-value">0</span>
+        </div>
+        <div class="hud-card">
+          <span class="hud-title">SCORE</span>
+          <span id="score-val" class="hud-value">0</span>
+        </div>
+      </div>
+
+      <!-- Center Notifications -->
+      <div id="notification-area">
+        <div id="wave-banner" class="hidden">WAVE 1</div>
+        <div id="reload-warning" class="hidden">PRESS [R] TO RELOAD</div>
+        <div id="low-health-warning" class="hidden">WARNING: CRITICAL HEALTH</div>
+      </div>
+
+      <!-- Bottom Status Bar -->
+      <div id="bottom-bar">
+        <!-- Health Section -->
+        <div class="status-block">
+          <div class="status-header">
+            <span>HEALTH</span>
+            <span id="health-text">100 / 100</span>
+          </div>
+          <div class="bar-bg">
+            <div id="health-bar-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Weapon & Ammo Section -->
+        <div class="status-block align-right">
+          <div class="status-header">
+            <span id="weapon-name">PLASMA RIFLE</span>
+          </div>
+          <div id="ammo-display">
+            <span id="ammo-clip">30</span>
+            <span class="ammo-slash">/</span>
+            <span id="ammo-reserve">120</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Damage Screen Flash -->
+    <div id="hurt-screen"></div>
+
+    <!-- Start Overlay Screen -->
+    <div id="start-screen" class="overlay">
+      <div class="modal">
+        <h1 class="game-title">CYBER STRIKE <span>3D</span></h1>
+        <p class="game-desc">SURVIVE WAVES OF AUTOMATED COMBAT DRONES</p>
+        
+        <div class="controls-grid">
+          <div class="ctrl-item"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</div>
+          <div class="ctrl-item"><kbd>MOUSE</kbd> Aim Camera</div>
+          <div class="ctrl-item"><kbd>LEFT CLICK</kbd> Shoot</div>
+          <div class="ctrl-item"><kbd>R</kbd> Reload Weapon</div>
+          <div class="ctrl-item"><kbd>SPACE</kbd> Jump</div>
+          <div class="ctrl-item"><kbd>SHIFT</kbd> Sprint</div>
+        </div>
+
+        <button id="start-btn" class="btn">ENGAGE SIMULATION</button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="overlay hidden">
+      <div class="modal danger-modal">
+        <h1 class="game-title danger-title">SYSTEM TERMINATED</h1>
+        <div class="stats-summary">
+          <div class="stat-row"><span>Final Score:</span><strong id="final-score">0</strong></div>
+          <div class="stat-row"><span>Waves Cleared:</span><strong id="final-wave">0</strong></div>
+          <div class="stat-row"><span>Drones Destroyed:</span><strong id="final-kills">0</strong></div>
+        </div>
+        <button id="restart-btn" class="btn btn-danger">RESTART SIMULATION</button>
+      </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="overlay hidden">
+      <div class="modal">
+        <h1 class="game-title">SIMULATION PAUSED</h1>
+        <p class="game-desc">CLICK ANYWHERE TO RESUME POINTER LOCK</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
