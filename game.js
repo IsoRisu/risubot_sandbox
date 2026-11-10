@@ -303,6 +303,57 @@ class SoundSystem {
     osc.stop(now + 1.2);
   }
 
+  playKill() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const notes = [587.33, 880];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const startTime = now + idx * 0.05;
+      gain.gain.setValueAtTime(0.3, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.1);
+    });
+  }
+
+  playWeaponSwitch() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+
+  playLanding() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(100, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+
   startBGM() {
 ===
     if (this.bgmTimer) return;
@@ -456,9 +507,13 @@ class Game {
     // Raycaster for shooting
     this.raycaster = new THREE.Raycaster();
 
-    // Weapon Animation Spring
+    // Weapon Animation Spring & Controls State
     this.weaponRecoil = { x: 0, y: 0, z: 0, rotX: 0 };
     this.weaponSway = { x: 0, y: 0 };
+    this.isMouseDown = false;
+    this.bobTimer = 0;
+    this.cameraTilt = 0;
+    this.wasGrounded = true;
 
     window.addEventListener('resize', () => this.onWindowResize());
   }
@@ -526,6 +581,7 @@ class Game {
     });
 
     this.controls.addEventListener('unlock', () => {
+      this.isMouseDown = false;
       if (state.active && state.health > 0) {
         document.getElementById('pause-screen').classList.remove('hidden');
         document.getElementById('hud').classList.add('hidden');
@@ -606,6 +662,22 @@ class Game {
       const box = new THREE.Box3().setFromObject(mesh);
       this.obstacles.push(box);
     });
+
+    // Top Perimeter Neon Strips & Center Light
+    const neonMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    const stripTop1 = new THREE.Mesh(new THREE.BoxGeometry(floorSize, 0.2, 0.2), neonMat);
+    stripTop1.position.set(0, wallHeight, -halfSize + 0.1);
+    const stripTop2 = new THREE.Mesh(new THREE.BoxGeometry(floorSize, 0.2, 0.2), neonMat);
+    stripTop2.position.set(0, wallHeight, halfSize - 0.1);
+    const stripTop3 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, floorSize), neonMat);
+    stripTop3.position.set(-halfSize + 0.1, wallHeight, 0);
+    const stripTop4 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, floorSize), neonMat);
+    stripTop4.position.set(halfSize - 0.1, wallHeight, 0);
+    this.scene.add(stripTop1, stripTop2, stripTop3, stripTop4);
+
+    const centerPointLight = new THREE.PointLight(0x00f0ff, 1.2, 35);
+    centerPointLight.position.set(0, 8, 0);
+    this.scene.add(centerPointLight);
 
     // Procedural Obstacles / Cover Crates / Pillars
     const boxMat = new THREE.MeshStandardMaterial({ color: 0x182a45, roughness: 0.3, metalness: 0.8 });
@@ -744,6 +816,7 @@ class Game {
     document.addEventListener('mousedown', (e) => {
       if (!state.active || state.paused) return;
       if (e.button === 0) {
+        this.isMouseDown = true;
         this.shoot();
       } else if (e.button === 2) {
         state.isAiming = true;
@@ -751,7 +824,9 @@ class Game {
     });
 
     document.addEventListener('mouseup', (e) => {
-      if (e.button === 2) {
+      if (e.button === 0) {
+        this.isMouseDown = false;
+      } else if (e.button === 2) {
         state.isAiming = false;
       }
     });
@@ -769,6 +844,7 @@ class Game {
 
   switchWeapon(index) {
     if (state.isReloading || index === state.currentWeapon) return;
+    sounds.playWeaponSwitch();
     state.currentWeapon = index;
     const w = WEAPONS[index];
     state.clipSize = w.clipSize;
@@ -991,15 +1067,18 @@ class Game {
     let type = 'ammo';
     let colorHex = 0x00f0ff;
 
-    if (rand < 0.3) {
+    if (rand < 0.25) {
       type = 'health';
       colorHex = 0x00ff88;
-    } else if (rand < 0.5) {
+    } else if (rand < 0.45) {
       type = 'shield';
       colorHex = 0x00bfff;
-    } else if (rand < 0.7) {
+    } else if (rand < 0.65) {
       type = 'damage';
       colorHex = 0xff0055;
+    } else if (rand < 0.85) {
+      type = 'speed';
+      colorHex = 0xffff00;
     }
 
     const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
@@ -1092,7 +1171,11 @@ class Game {
           this.showDamagePopup(hit.point, dmg, isHeadshot);
           this.createSparks(hit.point, weapon.color);
 
-          this.createTracerLine(this.weaponGroup.position, hit.point, weapon.color);
+          if (state.currentWeapon === 2) {
+            this.createRailgunBeam(this.camera.position.clone().add(new THREE.Vector3(0.2, -0.2, -0.4)), hit.point);
+          } else {
+            this.createTracerLine(this.weaponGroup.position, hit.point, weapon.color);
+          }
 
           if (enemy === state.boss) {
             const fill = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
@@ -1107,6 +1190,9 @@ class Game {
         const wallIntersects = this.raycaster.intersectObjects(this.scene.children, false);
         if (wallIntersects.length > 0) {
           this.createSparks(wallIntersects[0].point, 0xffaa00);
+          if (state.currentWeapon === 2) {
+            this.createRailgunBeam(this.camera.position.clone().add(new THREE.Vector3(0.2, -0.2, -0.4)), wallIntersects[0].point);
+          }
         }
       }
     }
@@ -1139,8 +1225,35 @@ class Game {
     setTimeout(() => this.scene.remove(line), 40);
   }
 
+  createRailgunBeam(startPos, endPos) {
+    const dir = new THREE.Vector3().subVectors(endPos, startPos);
+    const dist = dir.length();
+    const geo = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
+    geo.rotateX(Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.9 });
+    const beam = new THREE.Mesh(geo, mat);
+    beam.position.copy(startPos).add(endPos).multiplyScalar(0.5);
+    beam.lookAt(endPos);
+    this.scene.add(beam);
+
+    const startTime = performance.now();
+    const animateBeam = () => {
+      const elapsed = (performance.now() - startTime) / 180;
+      if (elapsed >= 1) {
+        this.scene.remove(beam);
+      } else {
+        mat.opacity = (1 - elapsed) * 0.9;
+        beam.scale.set(1 - elapsed * 0.5, 1, 1 - elapsed * 0.5);
+        requestAnimationFrame(animateBeam);
+      }
+    };
+    animateBeam();
+  }
+
   destroyEnemy(enemy) {
     sounds.playEnemyDeath();
+    sounds.playKill();
+    this.triggerHitMarker(true);
     this.createExplosion(enemy.mesh.position);
 
     if (enemy === state.boss) {
@@ -1203,10 +1316,13 @@ class Game {
     }, 1200);
   }
 
-  triggerHitMarker() {
+  triggerHitMarker(isKill = false) {
     const marker = document.getElementById('hit-marker');
+    marker.classList.remove('active', 'kill');
+    void marker.offsetWidth; // force reflow
     marker.classList.add('active');
-    setTimeout(() => marker.classList.remove('active'), 100);
+    if (isKill) marker.classList.add('kill');
+    setTimeout(() => marker.classList.remove('active', 'kill'), 120);
   }
 
   createSparks(pos, colorHex) {
@@ -1390,6 +1506,28 @@ class Game {
     if (this.moveState.left) this.velocity.add(sideVec.clone().multiplyScalar(moveSpeed * delta * 40));
     if (this.moveState.right) this.velocity.add(sideVec.clone().multiplyScalar(-moveSpeed * delta * 40));
 
+    // Head Bobbing & Strafe Tilt
+    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
+    if (isMoving && this.isGrounded) {
+      this.bobTimer += delta * (this.moveState.sprint ? 14 : 10);
+      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.04;
+    } else {
+      this.bobTimer = 0;
+    }
+
+    let targetTilt = 0;
+    if (this.moveState.left) targetTilt = 0.02;
+    if (this.moveState.right) targetTilt = -0.02;
+    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 10);
+    this.camera.rotation.z = this.cameraTilt;
+
+    // Check Landing Impact
+    if (!this.wasGrounded && this.isGrounded) {
+      sounds.playLanding();
+      this.screenShake = 0.12;
+    }
+    this.wasGrounded = this.isGrounded;
+
     // Proposed movement step
     const pos = this.camera.position.clone();
     pos.x += this.velocity.x * delta;
@@ -1514,6 +1652,14 @@ class Game {
           const pBanner = document.getElementById('powerup-banner');
           pBanner.textContent = 'OVERCHARGE 2X DAMAGE ACTIVE!';
           pBanner.classList.remove('hidden');
+        } else if (pickup.type === 'speed') {
+          sounds.playPowerup();
+          state.powerup.active = true;
+          state.powerup.type = 'speed';
+          state.powerup.timer = 8;
+          const pBanner = document.getElementById('powerup-banner');
+          pBanner.textContent = 'HYPERSPEED BOOST ACTIVE!';
+          pBanner.classList.remove('hidden');
         } else {
           state.ammoReserve += 60;
         }
@@ -1600,8 +1746,19 @@ class Game {
   }
 
   updateWeapon(delta) {
+    if (this.isMouseDown && state.active && !state.paused) {
+      this.shoot();
+    }
+
     this.weaponRecoil.z = THREE.MathUtils.lerp(this.weaponRecoil.z, 0, delta * 12);
     this.weaponRecoil.rotX = THREE.MathUtils.lerp(this.weaponRecoil.rotX, 0, delta * 10);
+
+    const crosshair = document.getElementById('crosshair');
+    if (crosshair) {
+      const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
+      const scale = state.isAiming ? 0.75 : (isMoving ? 1.35 : 1.0);
+      crosshair.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    }
 
     // FOV Aim down sights
     const targetFov = state.isAiming ? 48 : 75;
