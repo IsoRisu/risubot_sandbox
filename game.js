@@ -832,15 +832,19 @@ class Game {
     const startBtn = document.getElementById('start-btn');
     const restartBtn = document.getElementById('restart-btn');
 
-    startBtn.addEventListener('click', () => {
+    const handleGameStart = () => {
       sounds.init();
       this.startNewGame();
-    });
+      // Check if touch device or mobile browser to display virtual joysticks
+      const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
+      if (isTouchDevice) {
+        document.getElementById('touch-controls-overlay').classList.remove('hidden');
+        document.getElementById('touch-controls-overlay').classList.add('active');
+      }
+    };
 
-    restartBtn.addEventListener('click', () => {
-      sounds.init();
-      this.startNewGame();
-    });
+    startBtn.addEventListener('click', handleGameStart);
+    restartBtn.addEventListener('click', handleGameStart);
 
     this.controls.addEventListener('lock', () => {
       if (state.active) {
@@ -861,9 +865,149 @@ class Game {
 
     document.getElementById('pause-screen').addEventListener('click', () => {
       if (state.active && state.paused) {
-        this.controls.lock();
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
+        if (!isTouchDevice) {
+          this.controls.lock();
+        } else {
+          document.getElementById('pause-screen').classList.add('hidden');
+          document.getElementById('hud').classList.remove('hidden');
+          state.paused = false;
+        }
       }
     });
+
+    this.initTouchJoysticks();
+  }
+
+  initTouchJoysticks() {
+    this.touchInput = {
+      moveVector: new THREE.Vector2(0, 0),
+      lookVector: new THREE.Vector2(0, 0),
+      leftTouchId: null,
+      rightTouchId: null,
+      leftStartPos: new THREE.Vector2(),
+      rightStartPos: new THREE.Vector2()
+    };
+
+    const leftZone = document.getElementById('joystick-left-zone');
+    const rightZone = document.getElementById('joystick-right-zone');
+    const leftThumb = document.getElementById('joystick-left-thumb');
+    const rightThumb = document.getElementById('joystick-right-thumb');
+
+    const maxRadius = 55;
+
+    leftZone.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      this.touchInput.leftTouchId = touch.identifier;
+      const rect = leftZone.getBoundingClientRect();
+      this.touchInput.leftStartPos.set(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }, { passive: false });
+
+    leftZone.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === this.touchInput.leftTouchId) {
+          const dx = touch.clientX - this.touchInput.leftStartPos.x;
+          const dy = touch.clientY - this.touchInput.leftStartPos.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          const clampedDist = Math.min(dist, maxRadius);
+
+          const thumbX = Math.cos(angle) * clampedDist;
+          const thumbY = Math.sin(angle) * clampedDist;
+          leftThumb.style.transform = `translate(calc(-50% + ${thumbX}px), calc(-50% + ${thumbY}px))`;
+
+          this.touchInput.moveVector.set(thumbX / maxRadius, thumbY / maxRadius);
+        }
+      }
+    }, { passive: false });
+
+    const handleLeftEnd = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === this.touchInput.leftTouchId) {
+          this.touchInput.leftTouchId = null;
+          this.touchInput.moveVector.set(0, 0);
+          leftThumb.style.transform = 'translate(-50%, -50%)';
+        }
+      }
+    };
+    leftZone.addEventListener('touchend', handleLeftEnd, { passive: false });
+    leftZone.addEventListener('touchcancel', handleLeftEnd, { passive: false });
+
+    // Right Joystick for Camera Look
+    rightZone.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      this.touchInput.rightTouchId = touch.identifier;
+      this.touchInput.rightStartPos.set(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    rightZone.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === this.touchInput.rightTouchId) {
+          const dx = touch.clientX - this.touchInput.rightStartPos.x;
+          const dy = touch.clientY - this.touchInput.rightStartPos.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          const clampedDist = Math.min(dist, maxRadius);
+
+          const thumbX = Math.cos(angle) * clampedDist;
+          const thumbY = Math.sin(angle) * clampedDist;
+          rightThumb.style.transform = `translate(calc(-50% + ${thumbX}px), calc(-50% + ${thumbY}px))`;
+
+          this.touchInput.lookVector.set(dx * 0.005, dy * 0.005);
+          this.touchInput.rightStartPos.set(touch.clientX, touch.clientY);
+        }
+      }
+    }, { passive: false });
+
+    const handleRightEnd = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === this.touchInput.rightTouchId) {
+          this.touchInput.rightTouchId = null;
+          this.touchInput.lookVector.set(0, 0);
+          rightThumb.style.transform = 'translate(-50%, -50%)';
+        }
+      }
+    };
+    rightZone.addEventListener('touchend', handleRightEnd, { passive: false });
+    rightZone.addEventListener('touchcancel', handleRightEnd, { passive: false });
+
+    // Touch Action Buttons wiring
+    const shootBtn = document.getElementById('touch-shoot-btn');
+    const dashBtn = document.getElementById('touch-dash-btn');
+    const jumpBtn = document.getElementById('touch-jump-btn');
+    const reloadBtn = document.getElementById('touch-reload-btn');
+    const pauseBtn = document.getElementById('touch-pause-btn');
+
+    shootBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.isMouseDown = true; this.shoot(); }, { passive: false });
+    shootBtn.addEventListener('touchend', (e) => { e.preventDefault(); this.isMouseDown = false; }, { passive: false });
+
+    dashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.performDash(); }, { passive: false });
+    jumpBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      this.jumpRequested = true;
+      if (this.isGrounded || this.coyoteTime > 0) {
+        this.velocity.y = 9.8;
+        this.isGrounded = false;
+        this.coyoteTime = 0;
+        sounds.playJump();
+      }
+    }, { passive: false });
+
+    reloadBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.reloadWeapon(); }, { passive: false });
+    pauseBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (state.active) {
+        state.paused = true;
+        document.getElementById('pause-screen').classList.remove('hidden');
+        document.getElementById('hud').classList.add('hidden');
+      }
+    }, { passive: false });
   }
 
   buildEnvironment() {
@@ -2309,6 +2453,17 @@ class Game {
     let baseSpeed = this.moveState.sprint ? 15.5 : 9.8;
     if (state.powerup.type === 'speed') baseSpeed *= 1.4;
 
+    // Handle virtual touch look vector rotation
+    if (this.touchInput && (this.touchInput.lookVector.x !== 0 || this.touchInput.lookVector.y !== 0)) {
+      const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+      euler.setFromQuaternion(this.camera.quaternion);
+      euler.y -= this.touchInput.lookVector.x * 2.0;
+      euler.x -= this.touchInput.lookVector.y * 2.0;
+      euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+      this.camera.quaternion.setFromEuler(euler);
+      this.touchInput.lookVector.set(0, 0); // reset after consuming
+    }
+
     // Responsive ground vs air friction and acceleration tuning
     const groundFriction = 12.0;
     const airFriction = 2.0;
@@ -2352,6 +2507,12 @@ class Game {
     if (this.moveState.backward) inputDir.add(forwardVec.clone().negate());
     if (this.moveState.left) inputDir.add(sideVec);
     if (this.moveState.right) inputDir.add(sideVec.clone().negate());
+
+    // Incorporate virtual touch joystick movement input
+    if (this.touchInput && this.touchInput.moveVector.lengthSq() > 0) {
+      inputDir.add(forwardVec.clone().multiplyScalar(-this.touchInput.moveVector.y));
+      inputDir.add(sideVec.clone().multiplyScalar(-this.touchInput.moveVector.x));
+    }
 
     if (inputDir.lengthSq() > 0) {
       inputDir.normalize();
