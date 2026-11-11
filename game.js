@@ -1471,21 +1471,21 @@ class Game {
       }
 
       if (hitPoint) {
-        if (hitEnemy) {
-          shotLandedAny = true;
-          const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
-          const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
-          hitEnemy.hp -= dmg;
-          sounds.playHit();
-          this.triggerHitMarker(isHeadshot);
-          this.showDamagePopup(hitPoint, dmg, isHeadshot);
-          this.createSparks(hitPoint, weapon.color);
+    if (hitEnemy) {
+      shotLandedAny = true;
+      const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
+      const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
+      hitEnemy.hp -= dmg;
+      sounds.playHit();
+      this.triggerHitMarker(isHeadshot);
+      this.showDamagePopup(hitPoint, dmg, isHeadshot);
+      this.createSparks(hitPoint, weapon.color);
 
-          if (state.currentWeapon === 2) {
-            this.createRailgunBeam(muzzleWorldPos, hitPoint);
-          } else {
-            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
-          }
+      if (state.currentWeapon === 2) {
+        this.createRailgunBeam(muzzleWorldPos, hitPoint);
+      } else {
+        this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
+      }
 
           if (hitEnemy === state.boss) {
             const fill = Math.max(0, (hitEnemy.hp / hitEnemy.maxHp) * 100);
@@ -1572,21 +1572,42 @@ class Game {
   createRailgunBeam(startPos, endPos) {
     const dir = new THREE.Vector3().subVectors(endPos, startPos);
     const dist = dir.length();
-    const geo = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
-    geo.rotateX(Math.PI / 2);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.9 });
-    const beam = new THREE.Mesh(geo, mat);
-    beam.position.copy(startPos).add(endPos).multiplyScalar(0.5);
-    beam.lookAt(endPos);
-    this.scene.add(beam);
+    let beam;
+    if (this.projectilePool.length > 0) {
+      const prObj = this.projectilePool.pop();
+      beam = prObj.mesh;
+      beam.geometry.dispose();
+      beam.geometry = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
+      beam.geometry.rotateX(Math.PI / 2);
+      beam.material.color.setHex(0xff0055);
+      beam.material.opacity = 0.9;
+      beam.position.copy(startPos).add(endPos).multiplyScalar(0.5);
+      beam.lookAt(endPos);
+      beam.scale.set(1, 1, 1);
+      beam.visible = true;
+    } else {
+      const geo = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
+      geo.rotateX(Math.PI / 2);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.9 });
+      beam = new THREE.Mesh(geo, mat);
+      beam.position.copy(startPos).add(endPos).multiplyScalar(0.5);
+      beam.lookAt(endPos);
+      this.scene.add(beam);
+    }
 
     const startTime = performance.now();
     const animateBeam = () => {
       const elapsed = (performance.now() - startTime) / 180;
       if (elapsed >= 1) {
-        this.scene.remove(beam);
+        beam.visible = false;
+        if (this.projectilePool.length < this.maxProjectilePoolSize) {
+          this.projectilePool.push({ mesh: beam });
+        } else {
+          this.scene.remove(beam);
+          if (beam.geometry) beam.geometry.dispose();
+        }
       } else {
-        mat.opacity = (1 - elapsed) * 0.9;
+        beam.material.opacity = (1 - elapsed) * 0.9;
         beam.scale.set(1 - elapsed * 0.5, 1, 1 - elapsed * 0.5);
         requestAnimationFrame(animateBeam);
       }
@@ -2119,8 +2140,19 @@ class Game {
     if (this.projectilePool.length > 0) {
       const prObj = this.projectilePool.pop();
       mesh = prObj.mesh;
+      if (!mesh.geometry || mesh.geometry.type !== 'SphereGeometry') {
+        if (mesh.geometry) mesh.geometry.dispose();
+        mesh.geometry = this.sharedGeos.sphereMedium || new THREE.SphereGeometry(0.2, 8, 8);
+      }
+      if (!mesh.material) {
+        mesh.material = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      } else {
+        mesh.material.color.setHex(0x00f0ff);
+        mesh.material.opacity = 1.0;
+      }
       mesh.position.copy(fromPos);
       mesh.position.y += 1.0;
+      mesh.scale.set(1, 1, 1);
       mesh.visible = true;
     } else {
       const geo = new THREE.SphereGeometry(0.2, 8, 8);
@@ -2142,6 +2174,7 @@ class Game {
     } else {
       this.scene.remove(pr.mesh);
       if (pr.mesh.geometry) pr.mesh.geometry.dispose();
+      if (pr.mesh.material) pr.mesh.material.dispose();
     }
   }
 
@@ -2151,7 +2184,9 @@ class Game {
       let mesh;
       if (this.debrisPool.length > 0) {
         mesh = this.debrisPool.pop();
+        mesh.material = mat;
         mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5));
+        mesh.scale.set(1, 1, 1);
         mesh.visible = true;
       } else {
         const geo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
