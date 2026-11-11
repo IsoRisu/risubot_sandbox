@@ -698,6 +698,14 @@ class Game {
     // Raycaster for shooting
     this.raycaster = new THREE.Raycaster();
 
+    // Spatial Partitioning (Octree) for accelerating enemy swarms collision/raycasting
+    this.octree = new Octree({
+      min: new THREE.Vector3(-60, -10, -60),
+      max: new THREE.Vector3(60, 30, 60),
+      maxObjects: 8,
+      maxLevels: 6
+    });
+
     // Weapon Animation Spring & Controls State
     this.weaponRecoil = { x: 0, y: 0, z: 0, rotX: 0 };
     this.weaponSway = { x: 0, y: 0 };
@@ -1109,6 +1117,9 @@ class Game {
 
     this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
     this.enemies = [];
+    if (this.octree) {
+      this.octree.clear();
+    }
     this.pickups.forEach(p => this.scene.remove(p.mesh));
     this.pickups = [];
     this.particles.forEach(p => this.scene.remove(p.mesh));
@@ -1299,7 +1310,7 @@ class Game {
     group.position.set(x, 0, z);
     this.enemyGroup.add(group);
 
-    this.enemies.push({
+    const enemyObj = {
       mesh: group,
       head: head,
       ring: ring,
@@ -1313,7 +1324,12 @@ class Game {
       strafeDir: Math.random() < 0.5 ? 1 : -1,
       flankOffset: (Math.random() - 0.5) * 6,
       seekingCover: false
-    });
+    };
+
+    this.enemies.push(enemyObj);
+    if (this.octree) {
+      this.octree.insert(enemyObj);
+    }
   }
 
   spawnPickup(position) {
@@ -1451,7 +1467,32 @@ class Game {
       let isHeadshot = false;
       let closestDistance = Infinity;
 
-      if (enemyIntersects.length > 0) {
+      // Use octree broadphase to narrow down potential hit enemies if available
+      let candidateEnemies = this.enemies;
+      if (this.octree) {
+        // Build ray bounding box or query along ray
+        const rayOrigin = this.raycaster.ray.origin;
+        const rayDir = this.raycaster.ray.direction;
+        const queryBox = new THREE.Box3(
+          new THREE.Vector3().copy(rayOrigin).addScaledVector(rayDir, 0),
+          new THREE.Vector3().copy(rayOrigin).addScaledVector(rayDir, 100)
+        ).expandByScalar(2);
+        candidateEnemies = this.octree.retrieve(queryBox);
+      }
+
+      const meshesToCheck = candidateEnemies.map(e => e.mesh);
+      const optimizedIntersects = meshesToCheck.length > 0 ? this.raycaster.intersectObjects(meshesToCheck, true) : enemyIntersects;
+
+      if (optimizedIntersects.length > 0) {
+        closestDistance = optimizedIntersects[0].distance;
+        hitPoint = optimizedIntersects[0].point;
+        let obj = optimizedIntersects[0].object;
+        isHeadshot = obj.name === 'head';
+        while (obj.parent && obj !== this.enemyGroup) {
+          obj = obj.parent;
+        }
+        hitEnemy = this.enemies.find(e => e.mesh === obj);
+      } else if (enemyIntersects.length > 0) {
         closestDistance = enemyIntersects[0].distance;
         hitPoint = enemyIntersects[0].point;
         let obj = enemyIntersects[0].object;
@@ -1634,6 +1675,9 @@ class Game {
 
     this.enemyGroup.remove(enemy.mesh);
     this.enemies = this.enemies.filter(e => e !== enemy);
+    if (this.octree) {
+      this.octree.remove(enemy);
+    }
 
     // Multikill combo handling
     state.comboCount++;
@@ -1996,6 +2040,11 @@ class Game {
   updateEnemies(delta) {
     const playerPos = this.camera.position;
     const now = performance.now();
+
+    if (this.octree) {
+      this.octree.clear();
+      this.enemies.forEach(e => this.octree.insert(e));
+    }
 
     // Dynamic Difficulty Scaling calculation based on player performance & movement speed
     if (!state.playerStats) {
@@ -2430,6 +2479,153 @@ class Game {
     }
 
     this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// Octree Spatial Partitioning Class for Enemy Swarm Acceleration
+class Octree {
+  constructor(bounds, maxObjects = 10, maxLevels = 5, level = 0) {
+    this.bounds = bounds; // { min: THREE.Vector3, max: THREE.Vector3 }
+    this.maxObjects = maxObjects;
+    this.maxLevels = maxLevels;
+    this.level = level;
+    this.objects = [];
+    this.nodes = [];
+  }
+
+  clear() {
+    this.objects = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (this.nodes[i]) {
+        this.nodes[i].clear();
+      }
+    }
+    this.nodes = [];
+  }
+
+  split() {
+    const subWidth = (this.bounds.max.x - this.bounds.min.x) / 2;
+    const subHeight = (this.bounds.max.y - this.bounds.min.y) / 2;
+    const subDepth = (this.bounds.max.z - this.bounds.min.z) / 2;
+    const x = this.bounds.min.x;
+    const y = this.bounds.min.y;
+    const z = this.bounds.min.z;
+
+    this.nodes[0] = new Octree({ min: new THREE.Vector3(x + subWidth, y + subHeight, z + subDepth), max: new THREE.Vector3(this.bounds.max.x, this.bounds.max.y, this.bounds.max.z) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[1] = new Octree({ min: new THREE.Vector3(x, y + subHeight, z + subDepth), max: new THREE.Vector3(x + subWidth, this.bounds.max.y, this.bounds.max.z) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[2] = new Octree({ min: new THREE.Vector3(x, y + subHeight, z), max: new THREE.Vector3(x + subWidth, this.bounds.max.y, z + subDepth) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[3] = new Octree({ min: new THREE.Vector3(x + subWidth, y + subHeight, z), max: new THREE.Vector3(this.bounds.max.x, this.bounds.max.y, z + subDepth) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[4] = new Octree({ min: new THREE.Vector3(x + subWidth, y, z + subDepth), max: new THREE.Vector3(this.bounds.max.x, y + subHeight, this.bounds.max.z) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[5] = new Octree({ min: new THREE.Vector3(x, y, z + subDepth), max: new THREE.Vector3(x + subWidth, y + subHeight, this.bounds.max.z) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[6] = new Octree({ min: new THREE.Vector3(x, y, z), max: new THREE.Vector3(x + subWidth, y + subHeight, z + subDepth) }, this.maxObjects, this.maxLevels, this.level + 1);
+    this.nodes[7] = new Octree({ min: new THREE.Vector3(x + subWidth, y, z), max: new THREE.Vector3(this.bounds.max.x, y + subHeight, z + subDepth) }, this.maxObjects, this.maxLevels, this.level + 1);
+  }
+
+  getIndex(pos) {
+    let index = -1;
+    const midX = (this.bounds.min.x + this.bounds.max.x) / 2;
+    const midY = (this.bounds.min.y + this.bounds.max.y) / 2;
+    const midZ = (this.bounds.min.z + this.bounds.max.z) / 2;
+
+    const top = (pos.y > midY);
+    const right = (pos.x > midX);
+    const front = (pos.z > midZ);
+
+    if (top) {
+      if (right) {
+        if (front) index = 0;
+        else index = 3;
+      } else {
+        if (front) index = 1;
+        else index = 2;
+      }
+    } else {
+      if (right) {
+        if (front) index = 4;
+        else index = 7;
+      } else {
+        if (front) index = 5;
+        else index = 6;
+      }
+    }
+    return index;
+  }
+
+  insert(object) {
+    const pos = object.mesh ? object.mesh.position : object.position;
+    if (!pos) return;
+
+    if (this.nodes.length > 0) {
+      const index = this.getIndex(pos);
+      if (index !== -1) {
+        this.nodes[index].insert(object);
+        return;
+      }
+    }
+
+    this.objects.push(object);
+
+    if (this.objects.length > this.maxObjects && this.level < this.maxLevels) {
+      if (this.nodes.length === 0) {
+        this.split();
+      }
+      let i = 0;
+      while (i < this.objects.length) {
+        const obj = this.objects[i];
+        const objPos = obj.mesh ? obj.mesh.position : obj.position;
+        const index = this.getIndex(objPos);
+        if (index !== -1) {
+          this.nodes[index].insert(obj);
+          this.objects.splice(i, 1);
+        } else {
+          i++;
+        }
+      }
+    }
+  }
+
+  remove(object) {
+    const pos = object.mesh ? object.mesh.position : object.position;
+    if (!pos) return false;
+
+    const idx = this.objects.indexOf(object);
+    if (idx !== -1) {
+      this.objects.splice(idx, 1);
+      return true;
+    }
+
+    if (this.nodes.length > 0) {
+      const index = this.getIndex(pos);
+      if (index !== -1) {
+        return this.nodes[index].remove(object);
+      }
+    }
+    return false;
+  }
+
+  retrieve(rangeBox) {
+    let returnObjects = [];
+    // Check intersection with bounds
+    const box = new THREE.Box3(this.bounds.min, this.bounds.max);
+    if (!box.intersectsBox(rangeBox)) {
+      return returnObjects;
+    }
+
+    for (let i = 0; i < this.objects.length; i++) {
+      const obj = this.objects[i];
+      const pos = obj.mesh ? obj.mesh.position : obj.position;
+      if (rangeBox.containsPoint(pos)) {
+        returnObjects.push(obj);
+      }
+    }
+
+    if (this.nodes.length > 0) {
+      for (let i = 0; i < this.nodes.length; i++) {
+        returnObjects = returnObjects.concat(this.nodes[i].retrieve(rangeBox));
+      }
+    }
+
+    return returnObjects;
   }
 }
 

@@ -29,3 +29,26 @@ describe('Cyber Strike 3D Smoke Tests', () => {
     expect(typeof ctx.fillRect).toBe('function');
   });
 });
+describe('Octree Spatial Partitioning Tests', () => {
+  it('correctly inserts and retrieves objects within bounds', () => {
+    const octree = new Octree({
+      min: new THREE.Vector3(-50, -50, -50),
+      max: new THREE.Vector3(50, 50, 50)
+    }, 2, 4);
+
+    const obj1 = { position: new THREE.Vector3(5, 5, 5), id: 1 };
+    const obj2 = { position: new THREE.Vector3(40, 40, 40), id: 2 };
+
+    octree.insert(obj1);
+    octree.insert(obj2);
+
+    const range = new THREE.Box3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(10, 10, 10)
+    );
+
+    const retrieved = octree.retrieve(range);
+    expect(retrieved).toContain(obj1);
+    expect(retrieved).not.toContain(obj2);
+  });
+});
