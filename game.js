@@ -770,6 +770,7 @@ class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.autoUpdate = true;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
@@ -782,10 +783,12 @@ class Game {
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
-    dirLight.shadow.bias = -0.0005;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 120;
-    const d = 45;
+    dirLight.shadow.bias = -0.0001;
+    dirLight.shadow.normalBias = 0.02;
+    dirLight.shadow.radius = 2.5; // Tuned PCF soft shadow blur radius for dynamic performance
+    dirLight.shadow.camera.near = 1.0;
+    dirLight.shadow.camera.far = 160;
+    const d = 55; // Expanded frustum to prevent cascade-shift/clipping during rapid rotations and high FOV adjustments
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
