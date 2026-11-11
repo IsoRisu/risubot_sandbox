@@ -1235,7 +1235,9 @@ class Game {
       maxHp: hp,
       speed: 2.8,
       lastAttack: 0,
+      lastSummon: performance.now(),
       attackCooldown: 1000,
+      phase: 1,
       stateTimer: 0,
       strafeDir: Math.random() < 0.5 ? 1 : -1,
       flankAngle: Math.random() * Math.PI * 2
@@ -1244,7 +1246,7 @@ class Game {
     this.enemies.push(bossObj);
     state.boss = bossObj;
 
-    document.getElementById('boss-name').textContent = `CYBER DREADNOUGHT - WAVE ${state.wave}`;
+    document.getElementById('boss-name').textContent = `CYBER DREADNOUGHT - WAVE ${state.wave} [PHASE 1]`;
     document.getElementById('boss-bar-container').classList.remove('hidden');
     document.getElementById('boss-bar-fill').style.width = '100%';
   }
@@ -2096,9 +2098,37 @@ class Game {
 
       if (enemy.type === 'boss') {
         enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+
+        // Boss Phase Transitions based on health thresholds
+        const hpRatio = enemy.hp / enemy.maxHp;
+        if (hpRatio <= 0.35 && enemy.phase < 3) {
+          enemy.phase = 3;
+          enemy.speed *= 1.4;
+          enemy.attackCooldown *= 0.6;
+          document.getElementById('boss-name').textContent = `CYBER DREADNOUGHT - WAVE ${state.wave} [PHASE 3: OVERDRIVE]`;
+          this.createExplosion(ePos);
+          sounds.playBossSpawn();
+        } else if (hpRatio <= 0.7 && enemy.phase < 2) {
+          enemy.phase = 2;
+          enemy.speed *= 1.25;
+          enemy.attackCooldown *= 0.8;
+          document.getElementById('boss-name').textContent = `CYBER DREADNOUGHT - WAVE ${state.wave} [PHASE 2: RAMPAGE]`;
+          this.createExplosion(ePos);
+          sounds.playBossSpawn();
+        }
+
+        // Minion Summoning Mechanics in Phases 2 and 3
+        if (enemy.phase >= 2 && now - enemy.lastSummon > (enemy.phase === 3 ? 8000 : 14000)) {
+          enemy.lastSummon = now;
+          sounds.playBossSpawn();
+          for (let s = 0; s < (enemy.phase === 3 ? 3 : 2); s++) {
+            const summonOffset = new THREE.Vector3((Math.random() - 0.5) * 8, 0, (Math.random() - 0.5) * 8);
+            this.spawnMinionAt(ePos.clone().add(summonOffset));
+          }
+        }
         
         if (enemy.stateTimer <= 0) {
-          enemy.stateTimer = 2.0 + Math.random() * 2;
+          enemy.stateTimer = (enemy.phase === 3 ? 1.0 : 2.0) + Math.random() * 2;
           enemy.strafeDir *= -1;
         }
 
@@ -2106,17 +2136,20 @@ class Game {
         const strafeMovement = sideDir.clone().multiplyScalar(enemy.strafeDir * effectiveSpeed * 0.9 * delta);
         ePos.add(strafeMovement);
 
-        if (dist > 14) {
+        const targetBossDist = enemy.phase === 3 ? 10 : 14;
+        if (dist > targetBossDist + 4) {
           ePos.add(dir.clone().multiplyScalar(effectiveSpeed * delta));
-        } else if (dist < 8) {
+        } else if (dist < targetBossDist - 4) {
           ePos.add(dir.clone().multiplyScalar(-effectiveSpeed * delta));
         }
 
-        if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
+        const currentCooldown = (enemy.attackCooldown / diffMultiplier);
+        if (now - enemy.lastAttack > currentCooldown) {
           enemy.lastAttack = now;
           this.fireEnemyLaser(ePos);
-          if (Math.random() < 0.5) {
-            setTimeout(() => this.fireEnemyLaser(ePos), 220);
+          const burstCount = enemy.phase === 3 ? 3 : (enemy.phase === 2 ? 2 : 1);
+          for (let b = 1; b < burstCount; b++) {
+            setTimeout(() => this.fireEnemyLaser(ePos), b * 180);
           }
         }
       } else if (enemy.type === 'shooter') {
@@ -2186,6 +2219,20 @@ class Game {
       }
     });
 
+    // Reactive Dodge Maneuvers for enemies against high-velocity projectiles (Railgun / high-speed fire)
+    if (state.currentWeapon === 2 && this.isMouseDown && state.ammoClip > 0) {
+      // Check if any enemies are close to the camera ray / crosshair and dodge sideways
+      this.enemies.forEach(en => {
+        if (en.mesh.position.distanceTo(playerPos) < 25 && (!en.dodgeCooldown || now - en.dodgeCooldown > 1200)) {
+          en.dodgeCooldown = now;
+          const dodgeDir = Math.random() < 0.5 ? 1 : -1;
+          const evadeVec = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x).normalize().multiplyScalar(dodgeDir * 4.5);
+          en.mesh.position.add(evadeVec);
+          this.createSparks(en.mesh.position, 0x00f0ff);
+        }
+      });
+    }
+
     // Update enemy projectiles with difficulty-scaled projectile speed
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const projPr = this.projectiles[i];
@@ -2199,6 +2246,54 @@ class Game {
         this.recycleProjectile(projPr);
         this.projectiles.splice(i, 1);
       }
+    }
+  }
+
+  spawnMinionAt(pos) {
+    const group = new THREE.Group();
+    const radius = 0.5;
+    const hp = 45;
+    const speed = 4.0;
+    const colorHex = 0xff00bb;
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.3, metalness: 0.8 })
+    );
+    core.position.y = radius + 0.2;
+    core.castShadow = true;
+    group.add(core);
+
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.4, 8, 8),
+      new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.5 })
+    );
+    head.position.set(0, radius + 0.3, radius * 0.75);
+    head.name = 'head';
+    group.add(head);
+
+    group.position.copy(pos);
+    this.enemyGroup.add(group);
+
+    const enemyObj = {
+      mesh: group,
+      head: head,
+      ring: core,
+      type: 'scout',
+      hp: hp,
+      maxHp: hp,
+      speed: speed,
+      lastAttack: 0,
+      attackCooldown: 1200,
+      stateTimer: 1.0,
+      strafeDir: 1,
+      flankOffset: 0,
+      seekingCover: false
+    };
+
+    this.enemies.push(enemyObj);
+    if (this.octree) {
+      this.octree.insert(enemyObj);
     }
   }
 
