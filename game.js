@@ -2060,7 +2060,18 @@ class Game {
     // Difficulty multiplier ranges from 0.85 (struggling player) to 1.45 (highly skilled player)
     const diffMultiplier = THREE.MathUtils.clamp(0.85 + (accuracy * 0.4) + (avgSpeed / 30), 0.8, 1.5);
 
-    this.enemies.forEach(enemy => {
+    // Wave threat factor based on active enemy count and wave tier
+    const activeThreatCount = this.enemies.length;
+    const waveThreatScale = 1.0 + Math.min(activeThreatCount * 0.04, 0.8) + (state.wave * 0.03);
+
+    // Compute squad center of mass for coordinated maneuvers
+    const squadCenter = new THREE.Vector3();
+    if (activeThreatCount > 0) {
+      this.enemies.forEach(e => squadCenter.add(e.mesh.position));
+      squadCenter.divideScalar(activeThreatCount);
+    }
+
+    this.enemies.forEach((enemy, idx) => {
       enemy.ring.rotation.z += delta * 2;
       enemy.stateTimer -= delta;
 
@@ -2070,20 +2081,29 @@ class Game {
       const dist = toPlayer.length();
       const dir = toPlayer.clone().normalize();
 
-      // Flanking and Strafing vector calculation
+      // Flanking vector calculation with dynamic offset based on squad index
       const sideDir = new THREE.Vector3(-dir.z, 0, dir.x);
+      const flankSign = (idx % 2 === 0) ? 1 : -1;
+      const dynamicFlankOffset = sideDir.clone().multiplyScalar(flankSign * (3.5 + (idx % 3) * 2.0));
+
+      // Squad cohesion force (steer slightly towards squad center of mass to prevent scattered isolation)
+      const cohesionVec = new THREE.Vector3().subVectors(squadCenter, ePos);
+      cohesionVec.y = 0;
+      if (cohesionVec.lengthSq() > 0.001) cohesionVec.normalize();
+
+      // Variable speed scaling based on active wave threats and player proximity
+      const threatSpeedMultiplier = diffMultiplier * waveThreatScale * (dist < 10 ? 1.15 : 0.95);
 
       if (enemy.type === 'boss') {
         enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
         
-        // Boss advanced flanking & strafing pattern
         if (enemy.stateTimer <= 0) {
-          enemy.stateTimer = 2.5 + Math.random() * 2;
+          enemy.stateTimer = 2.0 + Math.random() * 2;
           enemy.strafeDir *= -1;
         }
 
-        const effectiveSpeed = enemy.speed * diffMultiplier;
-        const strafeMovement = sideDir.clone().multiplyScalar(enemy.strafeDir * effectiveSpeed * 0.8 * delta);
+        const effectiveSpeed = enemy.speed * threatSpeedMultiplier;
+        const strafeMovement = sideDir.clone().multiplyScalar(enemy.strafeDir * effectiveSpeed * 0.9 * delta);
         ePos.add(strafeMovement);
 
         if (dist > 14) {
@@ -2095,74 +2115,73 @@ class Game {
         if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
           enemy.lastAttack = now;
           this.fireEnemyLaser(ePos);
-          // Dreadnought Boss secondary spread barrage
-          if (Math.random() < 0.4) {
-            setTimeout(() => this.fireEnemyLaser(ePos), 200);
+          if (Math.random() < 0.5) {
+            setTimeout(() => this.fireEnemyLaser(ePos), 220);
           }
         }
       } else if (enemy.type === 'shooter') {
         enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
 
-        // Cover-seeking logic: If low health or player is too close, retreat toward obstacles
-        let targetPos = ePos.clone();
-        if (enemy.hp < enemy.maxHp * 0.35 && !enemy.seekingCover) {
+        // Advanced Cover-Seeking Routine: Check obstacles or retreat when threatened or low HP
+        if ((enemy.hp < enemy.maxHp * 0.4 || activeThreatCount > 8) && !enemy.seekingCover) {
           enemy.seekingCover = true;
-          enemy.stateTimer = 3.0;
+          enemy.stateTimer = 3.5;
         }
 
         if (enemy.seekingCover) {
-          ePos.add(dir.clone().multiplyScalar(-enemy.speed * diffMultiplier * delta));
+          // Retreat backward and blend with squad cohesion
+          const retreatDir = dir.clone().negate().add(cohesionVec.clone().multiplyScalar(0.3)).normalize();
+          ePos.add(retreatDir.multiplyScalar(enemy.speed * threatSpeedMultiplier * delta));
           if (enemy.stateTimer <= 0) enemy.seekingCover = false;
         } else {
-          // Strafing maneuver
+          // Dynamic Flanking & Strafing pattern
           if (enemy.stateTimer <= 0) {
-            enemy.stateTimer = 1.5 + Math.random() * 2;
+            enemy.stateTimer = 1.8 + Math.random() * 2;
             enemy.strafeDir = Math.random() < 0.5 ? 1 : -1;
           }
-          const strafeMove = sideDir.clone().multiplyScalar(enemy.strafeDir * enemy.speed * diffMultiplier * delta);
-          ePos.add(strafeMove);
 
-          if (dist > 15) {
-            ePos.add(dir.clone().multiplyScalar(enemy.speed * diffMultiplier * delta));
-          } else if (dist < 8) {
-            ePos.add(dir.clone().multiplyScalar(-enemy.speed * diffMultiplier * delta));
+          const flankVector = dir.clone().multiplyScalar(0.5).add(dynamicFlankOffset.clone().multiplyScalar(0.4)).normalize();
+          const approachVel = flankVector.multiplyScalar(enemy.speed * threatSpeedMultiplier * delta);
+          ePos.add(approachVel);
+
+          if (dist > 16) {
+            ePos.add(dir.clone().multiplyScalar(enemy.speed * threatSpeedMultiplier * delta));
+          } else if (dist < 9) {
+            ePos.add(dir.clone().multiplyScalar(-enemy.speed * threatSpeedMultiplier * delta));
           }
         }
 
-        if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
+        if (now - enemy.lastAttack > (enemy.attackCooldown / threatSpeedMultiplier)) {
           enemy.lastAttack = now;
           this.fireEnemyLaser(ePos);
         }
       } else if (enemy.type === 'scout') {
-        // Fast Flanking Scout behavior
+        // Aggressive Wide Flanking Scout behavior
         enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
 
         if (enemy.stateTimer <= 0) {
-          enemy.stateTimer = 2.0;
+          enemy.stateTimer = 1.5;
           enemy.strafeDir *= -1;
         }
 
-        const flankVec = sideDir.clone().multiplyScalar(enemy.strafeDir * enemy.speed * diffMultiplier * delta);
-        ePos.add(flankVec);
+        const wideFlank = sideDir.clone().multiplyScalar(enemy.strafeDir * enemy.speed * 1.5 * delta);
+        const forwardPush = dir.clone().multiplyScalar(enemy.speed * threatSpeedMultiplier * delta);
+        ePos.add(wideFlank).add(forwardPush);
 
-        if (dist > 3.5) {
-          ePos.add(dir.clone().multiplyScalar(enemy.speed * diffMultiplier * delta));
-        } else {
-          if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
-            enemy.lastAttack = now;
-            this.takeDamage(10 * diffMultiplier);
-          }
+        if (dist <= 4.0 && now - enemy.lastAttack > (enemy.attackCooldown / threatSpeedMultiplier)) {
+          enemy.lastAttack = now;
+          this.takeDamage(12 * diffMultiplier);
         }
       } else {
-        // Tank Enemy behavior: direct relentless advance with occasional cover pause
+        // Tank Enemy behavior: Coordinated heavy vanguard advance with squad pull
         enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
-        if (dist > 2.2) {
-          ePos.add(dir.clone().multiplyScalar(enemy.speed * diffMultiplier * delta));
-        } else {
-          if (now - enemy.lastAttack > (enemy.attackCooldown / diffMultiplier)) {
-            enemy.lastAttack = now;
-            this.takeDamage(22 * diffMultiplier);
-          }
+        const tankDir = dir.clone().add(cohesionVec.clone().multiplyScalar(0.25)).normalize();
+
+        if (dist > 2.5) {
+          ePos.add(tankDir.multiplyScalar(enemy.speed * threatSpeedMultiplier * delta));
+        } else if (now - enemy.lastAttack > (enemy.attackCooldown / threatSpeedMultiplier)) {
+          enemy.lastAttack = now;
+          this.takeDamage(24 * diffMultiplier);
         }
       }
     });
