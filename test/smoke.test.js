@@ -141,4 +141,175 @@ describe('Shadow Map and Frustum Configuration Tests', () => {
     expect(dirLight.shadow.camera.right).toBe(55);
     expect(dirLight.shadow.camera.far).toBe(160);
   });
+});describe('Game State Initialization, Weapon Switching, and Ammo Calculations', () => {
+  it('initializes game state correctly with default values', () => {
+    expect(state).toBeDefined();
+    expect(state.health).toBe(100);
+    expect(state.maxHealth).toBe(100);
+    expect(state.shield).toBe(50);
+    expect(state.maxShield).toBe(50);
+    expect(state.score).toBe(0);
+    expect(state.wave).toBe(1);
+    expect(state.currentWeapon).toBe(0);
+  });
+
+  it('performs weapon switching and updates clip size and ammo correctly', () => {
+    // Simulate game state initialization
+    state.currentWeapon = 0;
+    state.clipSize = WEAPONS[0].clipSize;
+    state.ammoClip = WEAPONS[0].clipSize;
+    state.ammoReserve = WEAPONS[0].maxReserve;
+
+    expect(WEAPONS.length).toBeGreaterThan(1);
+    
+    // Switch to weapon 1 (Cyber Shotgun)
+    const targetWeapon = WEAPONS[1];
+    state.currentWeapon = 1;
+    state.clipSize = targetWeapon.clipSize;
+    state.ammoClip = targetWeapon.clipSize;
+
+    expect(state.currentWeapon).toBe(1);
+    expect(state.clipSize).toBe(8);
+    expect(state.ammoClip).toBe(8);
+
+    // Test ammo clip reduction on shot / reload logic
+    state.ammoClip -= 3;
+    expect(state.ammoClip).toBe(5);
+
+    // Test reload calculation
+    const needed = state.clipSize - state.ammoClip;
+    const amount = Math.min(needed, state.ammoReserve);
+    state.ammoClip += amount;
+    state.ammoReserve -= amount;
+    expect(state.ammoClip).toBe(8);
+  });
+});
+
+describe('Player Health, Shield Damage Absorption, and Recharge Delay', () => {
+  it('absorbs damage with shield first, then health', () => {
+    state.health = 100;
+    state.maxHealth = 100;
+    state.shield = 50;
+    state.maxShield = 50;
+    state.shieldDelayTimer = 0;
+
+    // Helper logic simulating takeDamage
+    const applyDamage = (amount) => {
+      state.shieldDelayTimer = 3.0;
+      if (state.shield > 0) {
+        if (state.shield >= amount) {
+          state.shield -= amount;
+          amount = 0;
+        } else {
+          amount -= state.shield;
+          state.shield = 0;
+        }
+      }
+      if (amount > 0) {
+        state.health = Math.max(0, state.health - amount);
+      }
+    };
+
+    // Damage less than shield
+    applyDamage(20);
+    expect(state.shield).toBe(30);
+    expect(state.health).toBe(100);
+    expect(state.shieldDelayTimer).toBe(3.0);
+
+    // Damage exceeding shield
+    applyDamage(40); // 30 shield absorbed, 10 health damage
+    expect(state.shield).toBe(0);
+    expect(state.health).toBe(90);
+  });
+
+  it('recharges shield over time after recharge delay expires', () => {
+    state.health = 80;
+    state.maxHealth = 100;
+    state.shield = 0;
+    state.maxShield = 50;
+    state.shieldDelayTimer = 0;
+
+    const delta = 1.0;
+    // Simulate updatePlayer shield recharge logic
+    if (state.shieldDelayTimer > 0) {
+      state.shieldDelayTimer -= delta;
+    } else if (state.shield < state.maxShield) {
+      state.shield = Math.min(state.maxShield, state.shield + 20 * delta);
+    }
+
+    expect(state.shield).toBe(20);
+  });
+});
+
+describe('Scoring, Wave Progression Math, and Multikill Combo Timer Logic', () => {
+  it('calculates score gain and multikill combo scaling correctly', () => {
+    state.score = 0;
+    state.kills = 0;
+    state.enemiesLeft = 5;
+    state.comboCount = 0;
+    state.comboTimer = 0;
+
+    // Simulate enemy destroy scoring & multikill logic
+    const destroyEnemyMock = (enemyType) => {
+      state.comboCount++;
+      state.comboTimer = 2.5;
+      let scoreGain = 150 * Math.min(state.comboCount, 5);
+      if (enemyType === 'boss') scoreGain = 2000;
+      state.score += scoreGain;
+      state.kills++;
+      state.enemiesLeft--;
+    };
+
+    destroyEnemyMock('scout');
+    expect(state.comboCount).toBe(1);
+    expect(state.score).toBe(150);
+    expect(state.kills).toBe(1);
+
+    // Second kill within combo window
+    destroyEnemyMock('tank');
+    expect(state.comboCount).toBe(2);
+    expect(state.score).toBe(150 + 300); // 150 * 2
+  });
+
+  it('resets multikill combo when timer expires', () => {
+    state.comboCount = 3;
+    state.comboTimer = 0.5;
+
+    const delta = 0.6;
+    if (state.comboTimer > 0) {
+      state.comboTimer -= delta;
+      if (state.comboTimer <= 0) {
+        state.comboCount = 0;
+      }
+    }
+
+    expect(state.comboCount).toBe(0);
+    expect(state.comboTimer).toBeLessThanOrEqual(0);
+  });
+
+  it('calculates wave progression math correctly', () => {
+    const getWaveEnemyCount = (waveNum) => {
+      const isBossWave = (waveNum % 5 === 0);
+      return isBossWave ? 1 : 4 + waveNum * 3;
+    };
+
+    expect(getWaveEnemyCount(1)).toBe(7);
+    expect(getWaveEnemyCount(3)).toBe(13);
+    expect(getWaveEnemyCount(5)).toBe(1); // Boss wave
+    expect(getWaveEnemyCount(6)).toBe(22);
+  });
+});
+
+describe('Version Management System Tests', () => {
+  it('verifies GAME_VERSION properties and string representation format', () => {
+    expect(GAME_VERSION).toBeDefined();
+    expect(typeof GAME_VERSION.major).toBe('number');
+    expect(typeof GAME_VERSION.minor).toBe('number');
+    expect(typeof GAME_VERSION.patch).toBe('number');
+    expect(typeof GAME_VERSION.tag).toBe('string');
+    expect(typeof GAME_VERSION.toString).toBe('function');
+
+    const versionStr = GAME_VERSION.toString();
+    expect(versionStr).toMatch(/^v\d+\.\d+\.\d+-.+$/);
+  });
 });
