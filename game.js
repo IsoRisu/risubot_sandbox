@@ -520,6 +520,12 @@ class SoundSystem {
 
 const sounds = new SoundSystem();
 
+const CONSUMABLES = {
+  emp: { name: 'EMP Grenade', count: 2, max: 5 },
+  shield: { name: 'Nano Shield', count: 2, max: 5 },
+  stim: { name: 'Tactical Stim', count: 3, max: 5 }
+};
+
 const WEAPONS = [
   {
     name: 'PLASMA RIFLE',
@@ -535,7 +541,8 @@ const WEAPONS = [
     isEnergy: true,
     heatPerShot: 12,
     altFireName: 'CHARGED OVERLOAD',
-    altFireCost: 10
+    altFireCost: 10,
+    mods: []
   },
   {
     name: 'CYBER SHOTGUN',
@@ -548,7 +555,8 @@ const WEAPONS = [
     recoilZ: 0.3,
     recoilRot: 0.35,
     color: 0xffa000,
-    isEnergy: false
+    isEnergy: false,
+    mods: []
   },
   {
     name: 'RAIL CANNON',
@@ -564,7 +572,8 @@ const WEAPONS = [
     isEnergy: true,
     heatPerShot: 35,
     altFireName: 'PIERCING BEAM',
-    altFireCost: 2
+    altFireCost: 2,
+    mods: []
   },
   {
     name: 'PULSE SMG',
@@ -580,7 +589,8 @@ const WEAPONS = [
     isEnergy: true,
     heatPerShot: 8,
     altFireName: 'BURST FIRE',
-    altFireCost: 6
+    altFireCost: 6,
+    mods: []
   }
 ];
 
@@ -1047,6 +1057,15 @@ class Game {
         case 'KeyR':
           this.reloadWeapon();
           break;
+        case 'KeyZ':
+          this.useConsumable('emp');
+          break;
+        case 'KeyX':
+          this.useConsumable('shield');
+          break;
+        case 'KeyC':
+          this.useConsumable('stim');
+          break;
       }
     });
 
@@ -1089,13 +1108,56 @@ class Game {
     document.addEventListener('contextmenu', e => e.preventDefault());
   }
 
+  useConsumable(type) {
+    if (!state.active || state.paused) return;
+    const item = CONSUMABLES[type];
+    if (!item || item.count <= 0) return;
+
+    item.count--;
+    sounds.playPickup();
+
+    if (type === 'emp') {
+      // Stun/damage all enemies in radius
+      this.enemies.forEach(en => {
+        if (en.mesh.position.distanceTo(this.camera.position) < 18) {
+          en.hp -= 150;
+          this.createSparks(en.mesh.position, 0x00f0ff);
+          if (en.hp <= 0) this.destroyEnemy(en);
+        }
+      });
+      const banner = document.getElementById('powerup-banner');
+      banner.textContent = 'EMP BLAST ACTIVATED!';
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 2000);
+    } else if (type === 'shield') {
+      state.shield = state.maxShield * 1.5;
+      const banner = document.getElementById('powerup-banner');
+      banner.textContent = 'NANO SHIELD DEPLOYED (+50% SHIELD)!';
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 2000);
+    } else if (type === 'stim') {
+      state.powerup.active = true;
+      state.powerup.type = 'speed';
+      state.powerup.timer = 6;
+      state.health = Math.min(state.maxHealth, state.health + 30);
+      const banner = document.getElementById('powerup-banner');
+      banner.textContent = 'TACTICAL STIM: SPEED & REGEN BOOST!';
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 2000);
+    }
+
+    this.updateHUD();
+  }
+
   switchWeapon(index) {
     if (state.isReloading || index === state.currentWeapon) return;
     sounds.playWeaponSwitch();
     state.currentWeapon = index;
     const w = WEAPONS[index];
-    state.clipSize = w.clipSize;
-    state.ammoClip = w.clipSize;
+    let effectiveClip = w.clipSize;
+    if (w.mods && w.mods.includes('mag')) effectiveClip = Math.round(effectiveClip * 1.5);
+    state.clipSize = effectiveClip;
+    state.ammoClip = effectiveClip;
     state.altFireMode = false;
 
     this.weaponMeshes.forEach((m, idx) => {
@@ -1134,6 +1196,10 @@ class Game {
     state.powerup = { active: false, type: null, timer: 0 };
     state.boss = null;
     state.currentWeapon = 0;
+    CONSUMABLES.emp.count = 2;
+    CONSUMABLES.shield.count = 2;
+    CONSUMABLES.stim.count = 3;
+    WEAPONS.forEach(w => { w.mods = []; });
     state.clipSize = WEAPONS[0].clipSize;
     state.ammoClip = WEAPONS[0].clipSize;
     state.ammoReserve = WEAPONS[0].maxReserve;
@@ -1510,7 +1576,9 @@ class Game {
       this.muzzleFlashMesh.material.opacity = 0;
     }, 45);
 
-    const aimMultiplier = state.isAiming ? 0.5 : 1.0;
+    let spreadMult = state.isAiming ? 0.5 : 1.0;
+    if (weapon.mods && weapon.mods.includes('scope')) spreadMult *= 0.6;
+    const aimMultiplier = spreadMult;
 
     this.weaponRecoil.z = weapon.recoilZ * aimMultiplier;
     this.weaponRecoil.rotX = weapon.recoilRot * aimMultiplier;
@@ -1587,7 +1655,8 @@ class Game {
     if (hitEnemy) {
       shotLandedAny = true;
       const altDmgMult = state.altFireMode ? (state.currentWeapon === 0 ? 2.5 : (state.currentWeapon === 2 ? 1.8 : 0.8)) : 1.0;
-      const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0) * (state.weaponDamageMult || 1.0) * altDmgMult;
+      const modDmgMult = (weapon.mods && weapon.mods.includes('scope')) ? 1.15 : 1.0;
+      const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0) * (state.weaponDamageMult || 1.0) * modDmgMult * altDmgMult;
       const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
       hitEnemy.hp -= dmg;
       sounds.playHit();
@@ -1814,6 +1883,17 @@ class Game {
             state.health = state.maxHealth;
             btn.disabled = true;
             btn.textContent = 'ACQUIRED';
+          } else if (type === 'mod-scope') {
+            WEAPONS[state.currentWeapon].mods.push('scope');
+            btn.disabled = true;
+            btn.textContent = 'ACQUIRED';
+          } else if (type === 'mod-mag') {
+            WEAPONS[state.currentWeapon].mods.push('mag');
+            const w = WEAPONS[state.currentWeapon];
+            state.clipSize = Math.round(w.clipSize * 1.5);
+            state.ammoClip = state.clipSize;
+            btn.disabled = true;
+            btn.textContent = 'ACQUIRED';
           }
           this.updateHUD();
         }
@@ -1824,6 +1904,8 @@ class Game {
     setupUpgradeBtn('buy-cooling', 'cost-cooling', 'cooling', 400);
     setupUpgradeBtn('buy-shield', 'cost-shield', 'shield', 350);
     setupUpgradeBtn('buy-health', 'cost-health', 'health', 300);
+    setupUpgradeBtn('buy-mod-scope', 'cost-mod-scope', 'mod-scope', 450);
+    setupUpgradeBtn('buy-mod-mag', 'cost-mod-mag', 'mod-mag', 400);
 
     const closeBtn = document.getElementById('close-shop-btn');
     closeBtn.onclick = () => {
@@ -1982,6 +2064,9 @@ class Game {
 
     document.getElementById('ammo-clip').textContent = state.ammoClip;
     document.getElementById('ammo-reserve').textContent = state.ammoReserve;
+    document.getElementById('count-emp').textContent = CONSUMABLES.emp.count;
+    document.getElementById('count-shield').textContent = CONSUMABLES.shield.count;
+    document.getElementById('count-stim').textContent = CONSUMABLES.stim.count;
     document.getElementById('wave-num').textContent = state.wave;
     document.getElementById('enemy-count').textContent = state.enemiesLeft;
     document.getElementById('score-val').textContent = state.score;

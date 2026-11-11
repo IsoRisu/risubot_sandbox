@@ -114,12 +114,24 @@
               <div class="upgrade-cost">Cost: <span id="cost-health">300</span> pts</div>
               <button class="btn upgrade-buy-btn" id="buy-health">ACQUIRE</button>
             </div>
+            <div class="upgrade-card" data-upgrade="mod-scope">
+              <h3>TACTICAL SCOPE (MOD)</h3>
+              <p>Weapon mod: +15% damage, tighter spread</p>
+              <div class="upgrade-cost">Cost: <span id="cost-mod-scope">450</span> pts</div>
+              <button class="btn upgrade-buy-btn" id="buy-mod-scope">ACQUIRE</button>
+            </div>
+            <div class="upgrade-card" data-upgrade="mod-mag">
+              <h3>EXTENDED MAG (MOD)</h3>
+              <p>Weapon mod: +50% clip size</p>
+              <div class="upgrade-cost">Cost: <span id="cost-mod-mag">400</span> pts</div>
+              <button class="btn upgrade-buy-btn" id="buy-mod-mag">ACQUIRE</button>
+            </div>
           </div>
           <button id="close-shop-btn" class="btn" style="margin-top: 24px;">PROCEED TO NEXT WAVE</button>
         </div>
       </div>
 
-      <!-- Weapon Selector HUD Bar -->
+      <!-- Weapon Selector HUD Bar & Utility Hotbar -->
       <div id="weapon-bar">
         <div class="weapon-slot active" id="wslot-0">
           <span class="slot-key">1</span>
@@ -136,6 +148,24 @@
         <div class="weapon-slot" id="wslot-3">
           <span class="slot-key">4</span>
           <span class="slot-name">PULSE SMG</span>
+        </div>
+      </div>
+
+      <div id="utility-bar">
+        <div class="utility-slot" id="uslot-emp">
+          <span class="slot-key">Z</span>
+          <span class="slot-name">EMP GRENADE</span>
+          <span class="slot-count" id="count-emp">2</span>
+        </div>
+        <div class="utility-slot" id="uslot-shield">
+          <span class="slot-key">X</span>
+          <span class="slot-name">NANO SHIELD</span>
+          <span class="slot-count" id="count-shield">2</span>
+        </div>
+        <div class="utility-slot" id="uslot-stim">
+          <span class="slot-key">C</span>
+          <span class="slot-name">TACTICAL STIM</span>
+          <span class="slot-count" id="count-stim">3</span>
         </div>
       </div>
 
@@ -216,6 +246,7 @@
               <div class="ctrl-item"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> Weapons</div>
               <div class="ctrl-item"><kbd>E</kbd> Cyber Dash</div>
               <div class="ctrl-item"><kbd>R</kbd> Reload</div>
+              <div class="ctrl-item"><kbd>Z</kbd> EMP / <kbd>X</kbd> Shield / <kbd>C</kbd> Stim</div>
               <div class="ctrl-item"><kbd>SPACE</kbd> Jump / <kbd>SHIFT</kbd> Sprint</div>
             </div>
             <div class="audio-toggle-container">

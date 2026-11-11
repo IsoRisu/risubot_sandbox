@@ -422,7 +422,7 @@ kbd {
 @keyframes blink {
   0% { opacity: 0.3; }
   100% { opacity: 1; }
-}/* Weapon Selector Bar */
+}/* Weapon Selector Bar & Utility Bar */
 #weapon-bar {
   position: absolute;
   bottom: 90px;
@@ -431,6 +431,46 @@ kbd {
   display: flex;
   gap: 12px;
   pointer-events: none;
+}
+
+#utility-bar {
+  position: absolute;
+  bottom: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.utility-slot {
+  background: rgba(8, 15, 30, 0.7);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  border-radius: 6px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+}
+
+.utility-slot .slot-key {
+  background: rgba(255, 170, 0, 0.2);
+  color: #ffaa00;
+}
+
+.utility-slot .slot-name {
+  color: #ffeedd;
+}
+
+.slot-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffaa00;
+  margin-left: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .weapon-slot {

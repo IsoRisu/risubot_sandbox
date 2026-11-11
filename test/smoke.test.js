@@ -59,4 +59,18 @@ describe('Octree Spatial Partitioning Tests', () => {
     expect(retrieved).toContain(obj1);
     expect(retrieved).not.toContain(obj2);
   });
+});describe('Consumables and Weapon Mods Tests', () => {
+  it('verifies consumables and weapon mod configuration & functionality', () => {
+    expect(CONSUMABLES).toBeDefined();
+    expect(CONSUMABLES.emp.count).toBeGreaterThanOrEqual(0);
+    expect(CONSUMABLES.shield.count).toBeGreaterThanOrEqual(0);
+    expect(CONSUMABLES.stim.count).toBeGreaterThanOrEqual(0);
+
+    const weapon = WEAPONS[0];
+    expect(weapon.mods).toBeDefined();
+    weapon.mods.push('scope');
+    expect(weapon.mods).toContain('scope');
+    weapon.mods.push('mag');
+    expect(weapon.mods).toContain('mag');
+  });
 });
