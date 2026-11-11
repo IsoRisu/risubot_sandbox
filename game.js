@@ -78,299 +78,52 @@ class SoundSystem {
   }
 
   playGunshot() {
->>>>
 
-<<<EDIT path=game.js op=replace
-  playHit() {
+
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
+    
+    // Noise buffer for blast
+    const bufferSize = this.ctx.sampleRate * 0.12;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = buffer;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = 1200;
+    noiseFilter.Q.value = 1.5;
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.6, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    whiteNoise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+
+    // Low punch synth
     const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.08);
-  }
-
-  playEnemyDeath() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const oscGain = this.ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
 
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    oscGain.gain.setValueAtTime(0.5, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.25);
-  }
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
 
-  playPlayerHurt() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
-
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.2);
-  }
-
-  playReload() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(400, now);
-    osc.frequency.linearRampToValueAtTime(800, now + 0.15);
-    osc.frequency.linearRampToValueAtTime(500, now + 0.3);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.35);
-  }
-
-  playJump() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(350, now + 0.12);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    whiteNoise.start(now);
     osc.start(now);
     osc.stop(now + 0.12);
   }
 
-  playPickup() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99];
-    notes.forEach((freq, index) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const startTime = now + index * 0.06;
-      gain.gain.setValueAtTime(0.2, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.12);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.12);
-    });
-  }
-
-  playShotgun() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const bufferSize = this.ctx.sampleRate * 0.25;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2));
-    }
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.8, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-    noise.connect(gain);
-    gain.connect(this.ctx.destination);
-    noise.start(now);
-  }
-
-  playRailgun() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(1200, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
-
-    gain.gain.setValueAtTime(0.7, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.4);
-  }
-
-  playLaser() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  }
-
-  playPulseSMG() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
-
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  }
-
-  playDash() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.15);
-  }
-
-  playPowerup() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const notes = [440, 554.37, 659.25, 880];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const startTime = now + idx * 0.05;
-      gain.gain.setValueAtTime(0.25, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.15);
-    });
-  }
-
-  playBossSpawn() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(80, now);
-    osc.frequency.linearRampToValueAtTime(220, now + 0.6);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
-
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 1.2);
-  }
-
-  playKill() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const notes = [587.33, 880];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
-      const startTime = now + idx * 0.05;
-      gain.gain.setValueAtTime(0.3, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.1);
-    });
-  }
-
-  playWeaponSwitch() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  }
-
-  playLanding() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(100, now);
-    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  }
-===
   playHit() {
     this.playSynthSound(now => {
       const osc = this.acquireOscillator('sine');
@@ -725,343 +478,8 @@ class SoundSystem {
       }, 150);
     }, 0.1);
   }
->>>>
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    
-    // Noise buffer for blast
-    const bufferSize = this.ctx.sampleRate * 0.12;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
-    const whiteNoise = this.ctx.createBufferSource();
-    whiteNoise.buffer = buffer;
-
-    const noiseFilter = this.ctx.createBiquadFilter();
-    noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.value = 1200;
-    noiseFilter.Q.value = 1.5;
-
-    const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.6, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-    whiteNoise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(this.ctx.destination);
-
-    // Low punch synth
-    const osc = this.ctx.createOscillator();
-    const oscGain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
-
-    oscGain.gain.setValueAtTime(0.5, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-
-    osc.connect(oscGain);
-    oscGain.connect(this.ctx.destination);
-
-    whiteNoise.start(now);
-    osc.start(now);
-    osc.stop(now + 0.12);
-  }
-
-  playHit() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.08);
-  }
-
-  playEnemyDeath() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
-
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.25);
-  }
-
-  playPlayerHurt() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
-
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.2);
-  }
-
-  playReload() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(400, now);
-    osc.frequency.linearRampToValueAtTime(800, now + 0.15);
-    osc.frequency.linearRampToValueAtTime(500, now + 0.3);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.35);
-  }
-
-  playJump() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(350, now + 0.12);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.12);
-  }
-
-  playPickup() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99];
-    notes.forEach((freq, index) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const startTime = now + index * 0.06;
-      gain.gain.setValueAtTime(0.2, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.12);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.12);
-    });
-  }
-
-  playShotgun() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const bufferSize = this.ctx.sampleRate * 0.25;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2));
-    }
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.8, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-    noise.connect(gain);
-    gain.connect(this.ctx.destination);
-    noise.start(now);
-  }
-
-  playRailgun() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(1200, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
-
-    gain.gain.setValueAtTime(0.7, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.4);
-  }
-
-  playLaser() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  }
-
-  playPulseSMG() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
-
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  }
-
-  playDash() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.15);
-  }
-
-  playPowerup() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const notes = [440, 554.37, 659.25, 880];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const startTime = now + idx * 0.05;
-      gain.gain.setValueAtTime(0.25, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.15);
-    });
-  }
-
-  playBossSpawn() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(80, now);
-    osc.frequency.linearRampToValueAtTime(220, now + 0.6);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
-
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 1.2);
-  }
-
-  playKill() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const notes = [587.33, 880];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
-      const startTime = now + idx * 0.05;
-      gain.gain.setValueAtTime(0.3, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.1);
-    });
-  }
-
-  playWeaponSwitch() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  }
-
-  playLanding() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(100, now);
-    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  }
 
   startBGM() {
-===
     if (this.bgmTimer) return;
     let step = 0;
     this.bgmTimer = setInterval(() => {
@@ -1203,6 +621,16 @@ class Game {
     this.damagePopupPool = [];
     this.maxPopupPoolSize = 40;
 
+    // Object Pooling for Tracers, Projectiles, and Debris
+    this.tracerPool = [];
+    this.maxTracerPoolSize = 60;
+
+    this.projectilePool = [];
+    this.maxProjectilePoolSize = 50;
+
+    this.debrisPool = [];
+    this.maxDebrisPoolSize = 60;
+
     // Reusable Geometries and Materials to eliminate per-frame/shot allocations
     this.sharedGeos = {
       sphereSmall: new THREE.SphereGeometry(0.04, 4, 4),
@@ -1229,407 +657,28 @@ class Game {
     this.scene.add(this.obstacleGroup);
 
     this.clock = new THREE.Clock();
->>>>
 
-<<<EDIT path=game.js op=replace
-    wallsData.forEach(w => {
-      const geo = new THREE.BoxGeometry(...w.size);
-      const mesh = new THREE.Mesh(geo, wallMat);
-      mesh.position.set(...w.pos);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.scene.add(mesh);
 
-      const box = new THREE.Box3().setFromObject(mesh);
-      this.obstacles.push(box);
-    });
-===
-    wallsData.forEach(w => {
-      const geo = new THREE.BoxGeometry(...w.size);
-      const mesh = new THREE.Mesh(geo, wallMat);
-      mesh.position.set(...w.pos);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.obstacleGroup.add(mesh);
 
-      const box = new THREE.Box3().setFromObject(mesh);
-      this.obstacles.push(box);
-    });
->>>>
 
-<<<EDIT path=game.js op=replace
-    obstacleConfigs.forEach(cfg => {
-      const mesh = new THREE.Mesh(cfg.geo, cfg.mat);
-      mesh.position.set(...cfg.pos);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.scene.add(mesh);
 
-      const box = new THREE.Box3().setFromObject(mesh);
-      this.obstacles.push(box);
-    });
-===
-    obstacleConfigs.forEach(cfg => {
-      const mesh = new THREE.Mesh(cfg.geo, cfg.mat);
-      mesh.position.set(...cfg.pos);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.obstacleGroup.add(mesh);
 
-      const box = new THREE.Box3().setFromObject(mesh);
-      this.obstacles.push(box);
-    });
->>>>
 
-<<<EDIT path=game.js op=replace
-    state.score = 0;
-    state.kills = 0;
-    state.wave = 1;
 
-    this.enemies.forEach(e => this.scene.remove(e.mesh));
-    this.enemies = [];
-===
-    state.score = 0;
-    state.kills = 0;
-    state.wave = 1;
 
-    this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
-    this.enemies = [];
->>>>
 
-<<<EDIT path=game.js op=replace
-    group.position.set(0, 0, -dist);
-    this.scene.add(group);
 
-    const bossObj = {
-===
-    group.position.set(0, 0, -dist);
-    this.enemyGroup.add(group);
 
-    const bossObj = {
->>>>
 
-<<<EDIT path=game.js op=replace
-    group.position.set(x, 0, z);
-    this.scene.add(group);
 
-    this.enemies.push({
-===
-    group.position.set(x, 0, z);
-    this.enemyGroup.add(group);
-
-    this.enemies.push({
->>>>
-
-<<<EDIT path=game.js op=replace
-    for (let p = 0; p < weapon.pellets; p++) {
-      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
-
-      // Collect all enemy meshes and environment obstacles for precise hitscan raycasting
-      const enemyMeshes = this.enemies.map(e => e.mesh);
-      const enemyIntersects = this.raycaster.intersectObjects(enemyMeshes, true);
-      const obstacleIntersects = this.raycaster.intersectObjects(this.scene.children, true);
-
-      // Filter obstacle intersects to only environment geometry (exclude enemies/particles)
-      const validObstacles = obstacleIntersects.filter(hit => {
-        let obj = hit.object;
-        while (obj.parent && obj !== this.scene) {
-          if (this.enemies.some(e => e.mesh === obj)) return false;
-          obj = obj.parent;
-        }
-        return true;
-      });
-
-      let hitPoint = null;
-      let hitEnemy = null;
-      let isHeadshot = false;
-      let closestDistance = Infinity;
-
-      if (enemyIntersects.length > 0) {
-        closestDistance = enemyIntersects[0].distance;
-        hitPoint = enemyIntersects[0].point;
-        let obj = enemyIntersects[0].object;
-        isHeadshot = obj.name === 'head';
-        while (obj.parent && !this.enemies.some(e => e.mesh === obj)) {
-          obj = obj.parent;
-        }
-        hitEnemy = this.enemies.find(e => e.mesh === obj);
-      }
-
-      // Check if wall/obstacle is closer than the enemy hit
-      if (validObstacles.length > 0 && validObstacles[0].distance < closestDistance) {
-        hitPoint = validObstacles[0].point;
-        hitEnemy = null;
-        isHeadshot = false;
-      } else if (!hitPoint && validObstacles.length > 0) {
-        hitPoint = validObstacles[0].point;
-      }
-===
-    for (let p = 0; p < weapon.pellets; p++) {
-      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
-
-      // Raycast against isolated enemy and obstacle groups directly, avoiding full scene traversal
-      const enemyIntersects = this.raycaster.intersectObject(this.enemyGroup, true);
-      const obstacleIntersects = this.raycaster.intersectObject(this.obstacleGroup, true);
-
-      let hitPoint = null;
-      let hitEnemy = null;
-      let isHeadshot = false;
-      let closestDistance = Infinity;
-
-      if (enemyIntersects.length > 0) {
-        closestDistance = enemyIntersects[0].distance;
-        hitPoint = enemyIntersects[0].point;
-        let obj = enemyIntersects[0].object;
-        isHeadshot = obj.name === 'head';
-        while (obj.parent && obj !== this.enemyGroup) {
-          obj = obj.parent;
-        }
-        hitEnemy = this.enemies.find(e => e.mesh === obj);
-      }
-
-      if (obstacleIntersects.length > 0 && obstacleIntersects[0].distance < closestDistance) {
-        hitPoint = obstacleIntersects[0].point;
-        hitEnemy = null;
-        isHeadshot = false;
-      } else if (!hitPoint && obstacleIntersects.length > 0) {
-        hitPoint = obstacleIntersects[0].point;
-      }
->>>>
-
-<<<EDIT path=game.js op=replace
-    this.scene.remove(enemy.mesh);
-    this.enemies = this.enemies.filter(e => e !== enemy);
-===
-    this.enemyGroup.remove(enemy.mesh);
-    this.enemies = this.enemies.filter(e => e !== enemy);
->>>>
     this.lastShotTime = 0;
     this.screenShake = 0;
->>>>
 
-<<<EDIT path=game.js op=replace
-  createSparks(pos, colorHex) {
-    for (let i = 0; i < 16; i++) {
-      const size = 0.03 + Math.random() * 0.04;
-      const geo = new THREE.SphereGeometry(size, 6, 6);
-      const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 1.0 });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      this.scene.add(p);
 
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10 + 2,
-        (Math.random() - 0.5) * 10
-      );
 
-      this.particles.push({ mesh: p, vel: vel, life: 0.4 });
-    }
-  }
 
-  createExplosion(pos) {
-    // Add flash point light at explosion center
-    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
-    expLight.position.copy(pos);
-    expLight.position.y += 1.0;
-    this.scene.add(expLight);
-    setTimeout(() => this.scene.remove(expLight), 100);
 
-    for (let i = 0; i < 40; i++) {
-      const size = 0.06 + Math.random() * 0.18;
-      const geo = Math.random() < 0.5 ? new THREE.BoxGeometry(size, size, size) : new THREE.SphereGeometry(size, 6, 6);
-      const color = Math.random() < 0.4 ? 0xff0055 : (Math.random() < 0.7 ? 0x00f0ff : 0xffaa00);
-      const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 1.0 });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      p.position.y += 1.0;
-      this.scene.add(p);
 
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 16,
-        Math.random() * 12 + 2,
-        (Math.random() - 0.5) * 16
-      );
-
-      this.particles.push({ mesh: p, vel: vel, life: 0.75 });
-    }
-  }
-===
-  obtainParticle(geo, mat, pos, vel, life) {
-    let pObj;
-    if (this.particlePool.length > 0) {
-      pObj = this.particlePool.pop();
-      pObj.mesh.geometry = geo;
-      pObj.mesh.material = mat;
-      pObj.mesh.position.copy(pos);
-      pObj.mesh.visible = true;
-      pObj.vel.copy(vel);
-      pObj.life = life;
-      pObj.maxLife = life;
-    } else {
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(pos);
-      this.scene.add(mesh);
-      pObj = { mesh: mesh, vel: vel.clone(), life: life, maxLife: life };
-    }
-    this.particles.push(pObj);
-  }
-
-  createSparks(pos, colorHex) {
-    const mat = new THREE.MeshBasicMaterial({ color: colorHex });
-    for (let i = 0; i < 10; i++) {
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 8,
-        (Math.random() - 0.5) * 8 + 2,
-        (Math.random() - 0.5) * 8
-      );
-      this.obtainParticle(this.sharedGeos.sphereSmall, mat, pos, vel, 0.3);
-    }
-  }
-
-  createExplosion(pos) {
-    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
-    expLight.position.copy(pos);
-    expLight.position.y += 1.0;
-    this.scene.add(expLight);
-    setTimeout(() => this.scene.remove(expLight), 100);
-
-    const mats = [this.sharedMaterials.sparkRed, this.sharedMaterials.sparkCyan, this.sharedMaterials.sparkOrange];
-    const geos = [this.sharedGeos.boxSmall, this.sharedGeos.sphereMedium];
-
-    for (let i = 0; i < 24; i++) {
-      const geo = geos[Math.floor(Math.random() * geos.length)];
-      const mat = mats[Math.floor(Math.random() * mats.length)];
-      const spawnPos = pos.clone().add(new THREE.Vector3(0, 1.0, 0));
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 14,
-        Math.random() * 10 + 2,
-        (Math.random() - 0.5) * 14
-      );
-      this.obtainParticle(geo, mat, spawnPos, vel, 0.6);
-    }
-  }
->>>>
-
-<<<EDIT path=game.js op=replace
-  showDamagePopup(worldPos, damage, isHeadshot) {
-    const screenVec = worldPos.clone().project(this.camera);
-    if (screenVec.z > 1) return;
-    const x = (screenVec.x * 0.5 + 0.5) * window.innerWidth;
-    const y = (-(screenVec.y * 0.5) + 0.5) * window.innerHeight;
-
-    const pop = document.createElement('div');
-    pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
-    pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
-    pop.style.left = `${x}px`;
-    pop.style.top = `${y}px`;
-    document.body.appendChild(pop);
-    setTimeout(() => pop.remove(), 600);
-  }
-
-  createTracerLine(start, end, colorHex) {
-    const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
-    const line = new THREE.Line(geo, mat);
-    this.scene.add(line);
-    setTimeout(() => this.scene.remove(line), 40);
-  }
-===
-  showDamagePopup(worldPos, damage, isHeadshot) {
-    const screenVec = worldPos.clone().project(this.camera);
-    if (screenVec.z > 1) return;
-    const x = (screenVec.x * 0.5 + 0.5) * window.innerWidth;
-    const y = (-(screenVec.y * 0.5) + 0.5) * window.innerHeight;
-
-    let pop;
-    if (this.damagePopupPool.length > 0) {
-      pop = this.damagePopupPool.pop();
-      pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
-      pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
-      pop.style.display = 'block';
-      pop.style.left = `${x}px`;
-      pop.style.top = `${y}px`;
-    } else {
-      pop = document.createElement('div');
-      pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
-      pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
-      pop.style.left = `${x}px`;
-      pop.style.top = `${y}px`;
-      document.body.appendChild(pop);
-    }
-
-    const popupObj = { el: pop, life: 0.6 };
-    this.damagePopups.push(popupObj);
-  }
-
-  createTracerLine(start, end, colorHex) {
-    const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
-    const line = new THREE.Line(geo, mat);
-    this.scene.add(line);
-    setTimeout(() => {
-      this.scene.remove(line);
-      geo.dispose();
-      mat.dispose();
-    }, 40);
-  }
->>>>
-
-<<<EDIT path=game.js op=replace
-  updateParticles(delta) {
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.life -= delta;
-      p.mesh.position.addScaledVector(p.vel, delta);
-      p.mesh.scale.multiplyScalar(0.95);
-
-      if (p.life <= 0) {
-        this.scene.remove(p.mesh);
-        this.particles.splice(i, 1);
-      }
-    }
-  }
-===
-  updateParticles(delta) {
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.life -= delta;
-      p.mesh.position.addScaledVector(p.vel, delta);
-      p.mesh.scale.multiplyScalar(0.96);
-
-      if (p.life <= 0) {
-        p.mesh.visible = false;
-        p.mesh.scale.set(1, 1, 1);
-        this.particles.splice(i, 1);
-        if (this.particlePool.length < this.maxPoolSize) {
-          this.particlePool.push(p);
-        } else {
-          this.scene.remove(p.mesh);
-          p.mesh.geometry.dispose();
-        }
-      }
-    }
-
-    for (let i = this.damagePopups.length - 1; i >= 0; i--) {
-      const pop = this.damagePopups[i];
-      pop.life -= delta;
-      if (pop.life <= 0) {
-        pop.el.style.display = 'none';
-        this.damagePopups.splice(i, 1);
-        if (this.damagePopupPool.length < this.maxPopupPoolSize) {
-          this.damagePopupPool.push(pop.el);
-        } else {
-          pop.el.remove();
-        }
-      }
-    }
-  }
->>>>
 
     // Movement physics & controls configuration
     this.moveState = { forward: false, backward: false, left: false, right: false, sprint: false };
@@ -1639,229 +688,12 @@ class Game {
     this.playerRadius = 0.5;
     this.coyoteTime = 0;
     this.jumpRequested = false;
->>>>
 
-<<<EDIT path=game.js op=replace
-        case 'Space':
-          if (this.isGrounded) {
-            this.velocity.y = 8.5;
-            this.isGrounded = false;
-            sounds.playJump();
-          }
-          break;
-===
-        case 'Space':
-          this.jumpRequested = true;
-          if (this.isGrounded || this.coyoteTime > 0) {
-            this.velocity.y = 9.8;
-            this.isGrounded = false;
-            this.coyoteTime = 0;
-            sounds.playJump();
-          }
-          break;
->>>>
 
-<<<EDIT path=game.js op=replace
-  performDash() {
-    if (state.dashCooldown > 0 || !state.active || state.paused) return;
 
-    sounds.playDash();
-    state.dashCooldown = state.dashMaxCooldown;
-    state.isDashing = true;
-    state.dashDuration = 0.18;
 
-    const dashDir = new THREE.Vector3();
-    this.camera.getWorldDirection(dashDir);
-    dashDir.y = 0;
-    dashDir.normalize();
 
-    this.velocity.add(dashDir.multiplyScalar(32));
-    this.createSparks(this.camera.position, 0x00f0ff);
-  }
-===
-  performDash() {
-    if (state.dashCooldown > 0 || !state.active || state.paused) return;
 
-    sounds.playDash();
-    state.dashCooldown = state.dashMaxCooldown;
-    state.isDashing = true;
-    state.dashDuration = 0.22;
-
-    const dashDir = new THREE.Vector3();
-    const forwardVec = new THREE.Vector3();
-    this.camera.getWorldDirection(forwardVec);
-    forwardVec.y = 0;
-    forwardVec.normalize();
-
-    const sideVec = new THREE.Vector3();
-    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
-
-    let moveX = 0;
-    let moveZ = 0;
-    if (this.moveState.forward) moveZ += 1;
-    if (this.moveState.backward) moveZ -= 1;
-    if (this.moveState.left) moveX += 1;
-    if (this.moveState.right) moveX -= 1;
-
-    if (moveX !== 0 || moveZ !== 0) {
-      dashDir.set(0, 0, 0);
-      dashDir.add(forwardVec.clone().multiplyScalar(moveZ));
-      dashDir.add(sideVec.clone().multiplyScalar(moveX));
-      dashDir.normalize();
-    } else {
-      dashDir.copy(forwardVec);
-    }
-
-    // Preserve and boost momentum seamlessly
-    this.velocity.x = dashDir.x * 26;
-    this.velocity.z = dashDir.z * 26;
-    this.velocity.y = Math.max(this.velocity.y, 3.5); // Slight upward pop for fluid mobility
-
-    this.createSparks(this.camera.position, 0x00f0ff);
-    this.screenShake = 0.18;
-  }
->>>>
-
-<<<EDIT path=game.js op=replace
-    let moveSpeed = this.moveState.sprint ? 14 : 9;
-    if (state.powerup.type === 'speed') moveSpeed *= 1.4;
-
-    const friction = 10;
-
-    // Friction decay
-    this.velocity.x -= this.velocity.x * friction * delta;
-    this.velocity.z -= this.velocity.z * friction * delta;
-
-    // Gravity
-    this.velocity.y -= 25 * delta;
-
-    // Direct vectors relative to camera orientation
-    const forwardVec = new THREE.Vector3();
-    this.camera.getWorldDirection(forwardVec);
-    forwardVec.y = 0;
-    forwardVec.normalize();
-
-    const sideVec = new THREE.Vector3();
-    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
-
-    if (this.moveState.forward) this.velocity.add(forwardVec.clone().multiplyScalar(moveSpeed * delta * 40));
-    if (this.moveState.backward) this.velocity.add(forwardVec.clone().multiplyScalar(-moveSpeed * delta * 40));
-    if (this.moveState.left) this.velocity.add(sideVec.clone().multiplyScalar(moveSpeed * delta * 40));
-    if (this.moveState.right) this.velocity.add(sideVec.clone().multiplyScalar(-moveSpeed * delta * 40));
-
-    // Head Bobbing & Strafe Tilt
-    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
-    if (isMoving && this.isGrounded) {
-      this.bobTimer += delta * (this.moveState.sprint ? 14 : 10);
-      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.04;
-    } else {
-      this.bobTimer = 0;
-    }
-
-    let targetTilt = 0;
-    if (this.moveState.left) targetTilt = 0.02;
-    if (this.moveState.right) targetTilt = -0.02;
-    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 10);
-    this.camera.rotation.z = this.cameraTilt;
-
-    // Check Landing Impact
-    if (!this.wasGrounded && this.isGrounded) {
-      sounds.playLanding();
-      this.screenShake = 0.12;
-    }
-    this.wasGrounded = this.isGrounded;
-===
-    let baseSpeed = this.moveState.sprint ? 15.5 : 9.8;
-    if (state.powerup.type === 'speed') baseSpeed *= 1.4;
-
-    // Responsive ground vs air friction and acceleration tuning
-    const groundFriction = 12.0;
-    const airFriction = 2.0;
-    const currentFriction = this.isGrounded ? groundFriction : airFriction;
-
-    // Apply friction decay
-    this.velocity.x -= this.velocity.x * currentFriction * delta;
-    this.velocity.z -= this.velocity.z * currentFriction * delta;
-
-    // Gravity (with snappy apex acceleration for crisp jump feel)
-    const gravity = this.velocity.y < 0 ? 32 : 26;
-    this.velocity.y -= gravity * delta;
-
-    // Coyote time tracking
-    if (this.isGrounded) {
-      this.coyoteTime = 0.12;
-    } else {
-      this.coyoteTime = Math.max(0, this.coyoteTime - delta);
-    }
-
-    // Buffer jump handle
-    if (this.jumpRequested && (this.isGrounded || this.coyoteTime > 0)) {
-      this.velocity.y = 9.8;
-      this.isGrounded = false;
-      this.coyoteTime = 0;
-      sounds.playJump();
-    }
-    this.jumpRequested = false;
-
-    // Direct vectors relative to camera orientation
-    const forwardVec = new THREE.Vector3();
-    this.camera.getWorldDirection(forwardVec);
-    forwardVec.y = 0;
-    forwardVec.normalize();
-
-    const sideVec = new THREE.Vector3();
-    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
-
-    const inputDir = new THREE.Vector3();
-    if (this.moveState.forward) inputDir.add(forwardVec);
-    if (this.moveState.backward) inputDir.add(forwardVec.clone().negate());
-    if (this.moveState.left) inputDir.add(sideVec);
-    if (this.moveState.right) inputDir.add(sideVec.clone().negate());
-
-    if (inputDir.lengthSq() > 0) {
-      inputDir.normalize();
-      const accelRate = this.isGrounded ? 55.0 : 18.0;
-      this.velocity.add(inputDir.multiplyScalar(baseSpeed * accelRate * delta));
-
-      // Clamp horizontal speed for precise handling
-      const horizVel = new THREE.Vector3(this.velocity.x, 0, this.velocity.z);
-      const maxAllowedSpeed = baseSpeed * (state.isDashing ? 1.8 : 1.25);
-      if (horizVel.length() > maxAllowedSpeed) {
-        horizVel.normalize().multiplyScalar(maxAllowedSpeed);
-        this.velocity.x = horizVel.x;
-        this.velocity.z = horizVel.z;
-      }
-    }
-
-    // Dynamic Head Bobbing & Responsive Strafe Tilt
-    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
-    if (isMoving && this.isGrounded) {
-      this.bobTimer += delta * (this.moveState.sprint ? 16 : 11);
-      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.05;
-    } else {
-      this.bobTimer = 0;
-    }
-
-    let targetTilt = 0;
-    if (this.moveState.left) targetTilt = 0.032;
-    if (this.moveState.right) targetTilt = -0.032;
-    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 12);
-    this.camera.rotation.z = this.cameraTilt;
-
-    // Check Landing Impact & Dash state expiration
-    if (state.isDashing) {
-      state.dashDuration -= delta;
-      if (state.dashDuration <= 0) {
-        state.isDashing = false;
-      }
-    }
-
-    if (!this.wasGrounded && this.isGrounded) {
-      sounds.playLanding();
-      this.screenShake = 0.14;
-    }
-    this.wasGrounded = this.isGrounded;
->>>>
 
     // Raycaster for shooting
     this.raycaster = new THREE.Raycaster();
@@ -1936,149 +768,12 @@ class Game {
       this.scene.add(light);
     });
   }
->>>>
 
-<<<EDIT path=game.js op=replace
-    const floorMat = new THREE.MeshStandardMaterial({
-      map: floorTexture,
-      roughness: 0.4,
-      metalness: 0.6
-    });
-===
-    const floorMat = new THREE.MeshStandardMaterial({
-      map: floorTexture,
-      roughness: 0.25,
-      metalness: 0.85,
-      emissive: 0x001133,
-      emissiveIntensity: 0.2
-    });
->>>>
 
-<<<EDIT path=game.js op=replace
-  createSparks(pos, colorHex) {
-    for (let i = 0; i < 8; i++) {
-      const geo = new THREE.SphereGeometry(0.04, 4, 4);
-      const mat = new THREE.MeshBasicMaterial({ color: colorHex });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      this.scene.add(p);
 
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 6,
-        (Math.random() - 0.5) * 6,
-        (Math.random() - 0.5) * 6
-      );
 
-      this.particles.push({ mesh: p, vel: vel, life: 0.25 });
-    }
-  }
 
-  createExplosion(pos) {
-    for (let i = 0; i < 24; i++) {
-      const size = 0.08 + Math.random() * 0.12;
-      const geo = new THREE.BoxGeometry(size, size, size);
-      const mat = new THREE.MeshBasicMaterial({ color: Math.random() < 0.5 ? 0xff0044 : 0x00f0ff });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      p.position.y += 1.0;
-      this.scene.add(p);
 
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        Math.random() * 8 + 2,
-        (Math.random() - 0.5) * 10
-      );
-
-      this.particles.push({ mesh: p, vel: vel, life: 0.6 });
-    }
-  }
-===
-  createSparks(pos, colorHex) {
-    for (let i = 0; i < 16; i++) {
-      const size = 0.03 + Math.random() * 0.04;
-      const geo = new THREE.SphereGeometry(size, 6, 6);
-      const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 1.0 });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      this.scene.add(p);
-
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10 + 2,
-        (Math.random() - 0.5) * 10
-      );
-
-      this.particles.push({ mesh: p, vel: vel, life: 0.4 });
-    }
-  }
-
-  createExplosion(pos) {
-    // Add flash point light at explosion center
-    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
-    expLight.position.copy(pos);
-    expLight.position.y += 1.0;
-    this.scene.add(expLight);
-    setTimeout(() => this.scene.remove(expLight), 100);
-
-    for (let i = 0; i < 40; i++) {
-      const size = 0.06 + Math.random() * 0.18;
-      const geo = Math.random() < 0.5 ? new THREE.BoxGeometry(size, size, size) : new THREE.SphereGeometry(size, 6, 6);
-      const color = Math.random() < 0.4 ? 0xff0055 : (Math.random() < 0.7 ? 0x00f0ff : 0xffaa00);
-      const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 1.0 });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      p.position.y += 1.0;
-      this.scene.add(p);
-
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 16,
-        Math.random() * 12 + 2,
-        (Math.random() - 0.5) * 16
-      );
-
-      this.particles.push({ mesh: p, vel: vel, life: 0.75 });
-    }
-  }
->>>>
-
-<<<EDIT path=style.css op=append
-/* High-End Cyberpunk Visual Aesthetics & Glow Enhancements */
-body {
-  background: radial-gradient(circle at center, #0a1428 0%, #02050a 100%);
-}
-
-#game-container::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  background-size: 100% 3px, 3px 100%;
-  z-index: 6;
-  opacity: 0.6;
-}
-
-.hud-card, .status-block, #radar-container, #boss-bar-container {
-  border-color: rgba(0, 240, 255, 0.5);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.1);
-}
-
-.hud-value {
-  text-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
-}
-
-.btn {
-  background: linear-gradient(90deg, #00f0ff, #00d2ff, #0088ff);
-  background-size: 200% auto;
-  animation: glowShift 4s linear infinite;
-}
-
-@keyframes glowShift {
-  0% { background-position: 0% center; }
-  50% { background-position: 100% center; }
-  100% { background-position: 0% center; }
-}
->>>>
 
   initControls() {
     this.controls = new THREE.PointerLockControls(this.camera, document.body);
@@ -2147,8 +842,10 @@ body {
 
     const floorMat = new THREE.MeshStandardMaterial({
       map: floorTexture,
-      roughness: 0.4,
-      metalness: 0.6
+      roughness: 0.25,
+      metalness: 0.85,
+      emissive: 0x001133,
+      emissiveIntensity: 0.2
     });
 
     const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize);
@@ -2181,7 +878,7 @@ body {
       mesh.position.set(...w.pos);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      this.scene.add(mesh);
+      this.obstacleGroup.add(mesh);
 
       const box = new THREE.Box3().setFromObject(mesh);
       this.obstacles.push(box);
@@ -2227,7 +924,7 @@ body {
       mesh.position.set(...cfg.pos);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      this.scene.add(mesh);
+      this.obstacleGroup.add(mesh);
 
       const box = new THREE.Box3().setFromObject(mesh);
       this.obstacles.push(box);
@@ -2315,9 +1012,11 @@ body {
           this.performDash();
           break;
         case 'Space':
-          if (this.isGrounded) {
-            this.velocity.y = 8.5;
+          this.jumpRequested = true;
+          if (this.isGrounded || this.coyoteTime > 0) {
+            this.velocity.y = 9.8;
             this.isGrounded = false;
+            this.coyoteTime = 0;
             sounds.playJump();
           }
           break;
@@ -2408,14 +1107,33 @@ body {
     state.kills = 0;
     state.wave = 1;
 
-    this.enemies.forEach(e => this.scene.remove(e.mesh));
+    this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
     this.enemies = [];
     this.pickups.forEach(p => this.scene.remove(p.mesh));
     this.pickups = [];
     this.particles.forEach(p => this.scene.remove(p.mesh));
     this.particles = [];
-    this.projectiles.forEach(pr => this.scene.remove(pr.mesh));
+    this.projectiles.forEach(pr => {
+      this.scene.remove(pr.mesh);
+      if (pr.mesh.geometry) pr.mesh.geometry.dispose();
+    });
     this.projectiles = [];
+    this.tracerPool.forEach(t => {
+      this.scene.remove(t);
+      if (t.geometry) t.geometry.dispose();
+      if (t.material) t.material.dispose();
+    });
+    this.tracerPool = [];
+    this.projectilePool.forEach(pr => {
+      this.scene.remove(pr.mesh);
+      if (pr.mesh.geometry) pr.mesh.geometry.dispose();
+    });
+    this.projectilePool = [];
+    this.debrisPool.forEach(d => {
+      this.scene.remove(d);
+      if (d.geometry) d.geometry.dispose();
+    });
+    this.debrisPool = [];
     document.getElementById('boss-bar-container').classList.add('hidden');
     document.getElementById('powerup-banner').classList.add('hidden');
     document.getElementById('combo-banner').classList.add('hidden');
@@ -2519,78 +1237,13 @@ body {
     document.getElementById('boss-bar-container').classList.remove('hidden');
     document.getElementById('boss-bar-fill').style.width = '100%';
   }
->>>>
 
-<<<EDIT path=game.js op=replace
-  spawnEnemy() {
-    const dist = 22 + Math.random() * 20;
-    const angle = Math.random() * Math.PI * 2;
-    const x = Math.cos(angle) * dist;
-    const z = Math.sin(angle) * dist;
 
-    const types = ['scout', 'tank', 'shooter'];
-    const type = types[Math.floor(Math.random() * types.length)];
-    const group = new THREE.Group();
 
-    let colorHex = 0xff0044;
-    let radius = 0.7;
-    let hp = 50 + state.wave * 15;
-    let speed = 3.5 + Math.min(state.wave * 0.3, 4);
 
-    if (type === 'scout') {
-      colorHex = 0xff00bb;
-      radius = 0.5;
-      hp *= 0.6;
-      speed *= 1.4;
-    } else if (type === 'tank') {
-      colorHex = 0xffaa00;
-      radius = 1.1;
-      hp *= 2.2;
-      speed *= 0.7;
-    } else if (type === 'shooter') {
-      colorHex = 0x00f0ff;
-      radius = 0.8;
-    }
 
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 16, 16),
-      new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.3, metalness: 0.8 })
-    );
-    core.position.y = radius + 0.3;
-    core.castShadow = true;
-    group.add(core);
 
-    // Glowing Head / Core
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(radius * 0.4, 12, 12),
-      new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.2 })
-    );
-    head.position.set(0, radius + 0.4, radius * 0.75);
-    head.name = 'head';
-    group.add(head);
 
-    const ringGeo = new THREE.TorusGeometry(radius * 1.4, 0.05, 8, 24);
-    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true }));
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = radius + 0.3;
-    group.add(ring);
-
-    group.position.set(x, 0, z);
-    this.scene.add(group);
-
-    this.enemies.push({
-      mesh: group,
-      head: head,
-      ring: ring,
-      type: type,
-      hp: hp,
-      maxHp: hp,
-      speed: speed,
-      lastAttack: 0,
-      attackCooldown: type === 'shooter' ? 2200 : 1000
-    });
-  }
-===
   spawnEnemy() {
     const dist = 22 + Math.random() * 20;
     const angle = Math.random() * Math.PI * 2;
@@ -2662,123 +1315,83 @@ body {
       seekingCover: false
     });
   }
->>>>
 
-<<<EDIT path=game.js op=replace
-  shoot() {
-    const now = performance.now();
-    const weapon = WEAPONS[state.currentWeapon];
+  spawnPickup(position) {
+    const rand = Math.random();
+    let type = 'ammo';
+    let colorHex = 0x00f0ff;
 
-    if (now - this.lastShotTime < weapon.fireRate) return;
-    if (state.isReloading) return;
-
-    if (state.ammoClip <= 0) {
-      this.reloadWeapon();
-      return;
+    if (rand < 0.25) {
+      type = 'health';
+      colorHex = 0x00ff88;
+    } else if (rand < 0.45) {
+      type = 'shield';
+      colorHex = 0x00bfff;
+    } else if (rand < 0.65) {
+      type = 'damage';
+      colorHex = 0xff0055;
+    } else if (rand < 0.85) {
+      type = 'speed';
+      colorHex = 0xffff00;
     }
 
-    this.lastShotTime = now;
-    state.ammoClip--;
-    this.updateHUD();
+    const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    const mat = new THREE.MeshStandardMaterial({
+      color: colorHex,
+      emissive: colorHex,
+      emissiveIntensity: 0.8
+    });
 
-    if (state.currentWeapon === 0) sounds.playGunshot();
-    else if (state.currentWeapon === 1) sounds.playShotgun();
-    else if (state.currentWeapon === 2) sounds.playRailgun();
-    else sounds.playPulseSMG();
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(position);
+    mesh.position.y = 0.6;
+    this.scene.add(mesh);
 
-    this.muzzleFlashLight.color.setHex(weapon.color);
-    this.muzzleFlashLight.intensity = 5;
-    this.muzzleFlashMesh.material.opacity = 1;
-    setTimeout(() => {
-      this.muzzleFlashLight.intensity = 0;
-      this.muzzleFlashMesh.material.opacity = 0;
-    }, 45);
-
-    // Aim down sights reduces spread and recoil for superior precision
-    const aimMultiplier = state.isAiming ? 0.5 : 1.0;
-
-    this.weaponRecoil.z = weapon.recoilZ * aimMultiplier;
-    this.weaponRecoil.rotX = weapon.recoilRot * aimMultiplier;
-    this.screenShake = weapon.recoilZ * 0.45 * aimMultiplier;
-
-    // Collect muzzle world position for authentic tracer origin
-    const muzzleWorldPos = new THREE.Vector3();
-    this.muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
-
-    for (let p = 0; p < weapon.pellets; p++) {
-      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
-
-      // Raycast against isolated enemy and obstacle groups directly, avoiding full scene traversal
-      const enemyIntersects = this.raycaster.intersectObject(this.enemyGroup, true);
-      const obstacleIntersects = this.raycaster.intersectObject(this.obstacleGroup, true);
-
-      let hitPoint = null;
-      let hitEnemy = null;
-      let isHeadshot = false;
-      let closestDistance = Infinity;
-
-      if (enemyIntersects.length > 0) {
-        closestDistance = enemyIntersects[0].distance;
-        hitPoint = enemyIntersects[0].point;
-        let obj = enemyIntersects[0].object;
-        isHeadshot = obj.name === 'head';
-        while (obj.parent && obj !== this.enemyGroup) {
-          obj = obj.parent;
-        }
-        hitEnemy = this.enemies.find(e => e.mesh === obj);
-      }
-
-      if (obstacleIntersects.length > 0 && obstacleIntersects[0].distance < closestDistance) {
-        hitPoint = obstacleIntersects[0].point;
-        hitEnemy = null;
-        isHeadshot = false;
-      } else if (!hitPoint && obstacleIntersects.length > 0) {
-        hitPoint = obstacleIntersects[0].point;
-      }
-
-      if (hitPoint) {
-        if (hitEnemy) {
-          const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
-          const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
-          hitEnemy.hp -= dmg;
-          sounds.playHit();
-          this.triggerHitMarker(isHeadshot);
-          this.showDamagePopup(hitPoint, dmg, isHeadshot);
-          this.createSparks(hitPoint, weapon.color);
-
-          if (state.currentWeapon === 2) {
-            this.createRailgunBeam(muzzleWorldPos, hitPoint);
-          } else {
-            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
-          }
-
-          if (hitEnemy === state.boss) {
-            const fill = Math.max(0, (hitEnemy.hp / hitEnemy.maxHp) * 100);
-            document.getElementById('boss-bar-fill').style.width = `${fill}%`;
-          }
-
-          if (hitEnemy.hp <= 0) {
-            this.destroyEnemy(hitEnemy);
-          }
-        } else {
-          // Environment wall/obstacle hit feedback
-          this.createSparks(hitPoint, 0xffaa00);
-          if (state.currentWeapon === 2) {
-            this.createRailgunBeam(muzzleWorldPos, hitPoint);
-          } else {
-            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
-          }
-        }
-      }
-    }
-
-    if (state.ammoClip === 0) {
-      this.reloadWeapon();
-    }
+    this.pickups.push({ mesh: mesh, type: type });
   }
-===
+
+  performDash() {
+    if (state.dashCooldown > 0 || !state.active || state.paused) return;
+
+    sounds.playDash();
+    state.dashCooldown = state.dashMaxCooldown;
+    state.isDashing = true;
+    state.dashDuration = 0.22;
+
+    const dashDir = new THREE.Vector3();
+    const forwardVec = new THREE.Vector3();
+    this.camera.getWorldDirection(forwardVec);
+    forwardVec.y = 0;
+    forwardVec.normalize();
+
+    const sideVec = new THREE.Vector3();
+    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
+
+    let moveX = 0;
+    let moveZ = 0;
+    if (this.moveState.forward) moveZ += 1;
+    if (this.moveState.backward) moveZ -= 1;
+    if (this.moveState.left) moveX += 1;
+    if (this.moveState.right) moveX -= 1;
+
+    if (moveX !== 0 || moveZ !== 0) {
+      dashDir.set(0, 0, 0);
+      dashDir.add(forwardVec.clone().multiplyScalar(moveZ));
+      dashDir.add(sideVec.clone().multiplyScalar(moveX));
+      dashDir.normalize();
+    } else {
+      dashDir.copy(forwardVec);
+    }
+
+    // Preserve and boost momentum seamlessly
+    this.velocity.x = dashDir.x * 26;
+    this.velocity.z = dashDir.z * 26;
+    this.velocity.y = Math.max(this.velocity.y, 3.5); // Slight upward pop for fluid mobility
+
+    this.createSparks(this.camera.position, 0x00f0ff);
+    this.screenShake = 0.18;
+  }
+
   shoot() {
     const now = performance.now();
     const weapon = WEAPONS[state.currentWeapon];
@@ -2901,63 +1514,464 @@ body {
       this.reloadWeapon();
     }
   }
->>>>
 
-<<<EDIT path=game.js op=replace
-  updateEnemies(delta) {
-    const playerPos = this.camera.position;
-    const now = performance.now();
+  showDamagePopup(worldPos, damage, isHeadshot) {
+    const screenVec = worldPos.clone().project(this.camera);
+    if (screenVec.z > 1) return;
+    const x = (screenVec.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(screenVec.y * 0.5) + 0.5) * window.innerHeight;
 
-    this.enemies.forEach(enemy => {
-      enemy.ring.rotation.z += delta * 2;
+    let pop;
+    if (this.damagePopupPool.length > 0) {
+      pop = this.damagePopupPool.pop();
+      pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
+      pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
+      pop.style.display = 'block';
+      pop.style.left = `${x}px`;
+      pop.style.top = `${y}px`;
+    } else {
+      pop = document.createElement('div');
+      pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
+      pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
+      pop.style.left = `${x}px`;
+      pop.style.top = `${y}px`;
+      document.body.appendChild(pop);
+    }
 
-      const ePos = enemy.mesh.position;
-      const dir = new THREE.Vector3().subVectors(playerPos, ePos);
-      dir.y = 0;
-      const dist = dir.length();
-      dir.normalize();
+    const popupObj = { el: pop, life: 0.6 };
+    this.damagePopups.push(popupObj);
+  }
 
-      if (enemy.type === 'boss') {
-        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
-        if (dist > 10) {
-          ePos.add(dir.multiplyScalar(enemy.speed * delta));
-        }
-        if (now - enemy.lastAttack > enemy.attackCooldown) {
-          enemy.lastAttack = now;
-          this.fireEnemyLaser(ePos);
-        }
-      } else if (enemy.type === 'shooter' && dist < 16 && dist > 7) {
-        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
-        if (now - enemy.lastAttack > enemy.attackCooldown) {
-          enemy.lastAttack = now;
-          this.fireEnemyLaser(ePos);
-        }
-      } else if (dist > 1.8) {
-        ePos.add(dir.multiplyScalar(enemy.speed * delta));
-        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
+  createTracerLine(start, end, colorHex) {
+    let line;
+    if (this.tracerPool.length > 0) {
+      line = this.tracerPool.pop();
+      line.geometry.setFromPoints([start, end]);
+      line.material.color.setHex(colorHex);
+      line.material.opacity = 0.7;
+      line.visible = true;
+    } else {
+      const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+      const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
+      line = new THREE.Line(geo, mat);
+      this.scene.add(line);
+    }
+
+    setTimeout(() => {
+      line.visible = false;
+      if (this.tracerPool.length < this.maxTracerPoolSize) {
+        this.tracerPool.push(line);
       } else {
-        if (now - enemy.lastAttack > enemy.attackCooldown) {
-          enemy.lastAttack = now;
-          this.takeDamage(enemy.type === 'tank' ? 25 : 12);
-        }
+        this.scene.remove(line);
+        if (line.geometry) line.geometry.dispose();
+        if (line.material) line.material.dispose();
       }
-    });
+    }, 40);
+  }
 
-    // Update enemy projectiles
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      const pr = this.projectiles[i];
-      pr.mesh.position.addScaledVector(pr.dir, pr.speed * delta);
-      if (pr.mesh.position.distanceTo(playerPos) < 1.2) {
-        this.takeDamage(16);
-        this.scene.remove(pr.mesh);
-        this.projectiles.splice(i, 1);
-      } else if (pr.mesh.position.length() > 120) {
-        this.scene.remove(pr.mesh);
-        this.projectiles.splice(i, 1);
+  createRailgunBeam(startPos, endPos) {
+    const dir = new THREE.Vector3().subVectors(endPos, startPos);
+    const dist = dir.length();
+    const geo = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
+    geo.rotateX(Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.9 });
+    const beam = new THREE.Mesh(geo, mat);
+    beam.position.copy(startPos).add(endPos).multiplyScalar(0.5);
+    beam.lookAt(endPos);
+    this.scene.add(beam);
+
+    const startTime = performance.now();
+    const animateBeam = () => {
+      const elapsed = (performance.now() - startTime) / 180;
+      if (elapsed >= 1) {
+        this.scene.remove(beam);
+      } else {
+        mat.opacity = (1 - elapsed) * 0.9;
+        beam.scale.set(1 - elapsed * 0.5, 1, 1 - elapsed * 0.5);
+        requestAnimationFrame(animateBeam);
       }
+    };
+    animateBeam();
+  }
+
+  destroyEnemy(enemy) {
+    sounds.playEnemyDeath();
+    sounds.playKill();
+    this.triggerHitMarker(true);
+    this.createExplosion(enemy.mesh.position);
+    this.spawnDebris(enemy.mesh.position);
+
+    if (enemy === state.boss) {
+      state.boss = null;
+      document.getElementById('boss-bar-container').classList.add('hidden');
+      for (let k = 0; k < 3; k++) this.spawnPickup(enemy.mesh.position);
+      // Spawn extra debris for boss
+      for (let k = 0; k < 5; k++) this.spawnDebris(enemy.mesh.position);
+    } else if (Math.random() < 0.5) {
+      this.spawnPickup(enemy.mesh.position);
+    }
+
+    this.enemyGroup.remove(enemy.mesh);
+    this.enemies = this.enemies.filter(e => e !== enemy);
+
+    // Multikill combo handling
+    state.comboCount++;
+    state.comboTimer = 2.5;
+
+    let scoreGain = 150 * Math.min(state.comboCount, 5);
+    if (enemy.type === 'boss') scoreGain = 2000;
+
+    state.score += scoreGain;
+    state.kills++;
+    state.enemiesLeft--;
+
+    if (state.comboCount >= 2) {
+      const comboBanner = document.getElementById('combo-banner');
+      comboBanner.textContent = `${state.comboCount}x MULTIKILL! +${scoreGain}`;
+      comboBanner.classList.remove('hidden');
+    }
+
+    this.updateHUD();
+
+    if (state.enemiesLeft <= 0 && this.enemies.length === 0) {
+      setTimeout(() => {
+        if (state.active) this.startWave(state.wave + 1);
+      }, 1500);
     }
   }
-===
+
+  reloadWeapon() {
+    if (state.isReloading || state.ammoClip === state.clipSize || state.ammoReserve <= 0) return;
+
+    state.isReloading = true;
+    sounds.playReload();
+    const warning = document.getElementById('reload-warning');
+    warning.textContent = 'RELOADING...';
+    warning.classList.remove('hidden');
+
+    // Reload rotation animation
+    this.weaponRecoil.rotX = -0.4;
+
+    setTimeout(() => {
+      const needed = state.clipSize - state.ammoClip;
+      const amount = Math.min(needed, state.ammoReserve);
+      state.ammoClip += amount;
+      state.ammoReserve -= amount;
+      state.isReloading = false;
+      warning.classList.add('hidden');
+      this.updateHUD();
+    }, 1200);
+  }
+
+  triggerHitMarker(isKill = false) {
+    const marker = document.getElementById('hit-marker');
+    marker.classList.remove('active', 'kill');
+    void marker.offsetWidth; // force reflow
+    marker.classList.add('active');
+    if (isKill) marker.classList.add('kill');
+    setTimeout(() => marker.classList.remove('active', 'kill'), 120);
+  }
+
+  obtainParticle(geo, mat, pos, vel, life) {
+    let pObj;
+    if (this.particlePool.length > 0) {
+      pObj = this.particlePool.pop();
+      pObj.mesh.geometry = geo;
+      pObj.mesh.material = mat;
+      pObj.mesh.position.copy(pos);
+      pObj.mesh.visible = true;
+      pObj.vel.copy(vel);
+      pObj.life = life;
+      pObj.maxLife = life;
+    } else {
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(pos);
+      this.scene.add(mesh);
+      pObj = { mesh: mesh, vel: vel.clone(), life: life, maxLife: life };
+    }
+    this.particles.push(pObj);
+  }
+
+  createSparks(pos, colorHex) {
+    const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+    for (let i = 0; i < 10; i++) {
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 8 + 2,
+        (Math.random() - 0.5) * 8
+      );
+      this.obtainParticle(this.sharedGeos.sphereSmall, mat, pos, vel, 0.3);
+    }
+  }
+
+  createExplosion(pos) {
+    const expLight = new THREE.PointLight(0xff0055, 5.0, 15);
+    expLight.position.copy(pos);
+    expLight.position.y += 1.0;
+    this.scene.add(expLight);
+    setTimeout(() => this.scene.remove(expLight), 100);
+
+    const mats = [this.sharedMaterials.sparkRed, this.sharedMaterials.sparkCyan, this.sharedMaterials.sparkOrange];
+    const geos = [this.sharedGeos.boxSmall, this.sharedGeos.sphereMedium];
+
+    for (let i = 0; i < 24; i++) {
+      const geo = geos[Math.floor(Math.random() * geos.length)];
+      const mat = mats[Math.floor(Math.random() * mats.length)];
+      const spawnPos = pos.clone().add(new THREE.Vector3(0, 1.0, 0));
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 14,
+        Math.random() * 10 + 2,
+        (Math.random() - 0.5) * 14
+      );
+      this.obtainParticle(geo, mat, spawnPos, vel, 0.6);
+    }
+  }
+
+  takeDamage(amount) {
+    if (!state.active || state.health <= 0) return;
+
+    state.shieldDelayTimer = 3.0; // Reset shield recharge delay
+
+    if (state.shield > 0) {
+      if (state.shield >= amount) {
+        state.shield -= amount;
+        amount = 0;
+      } else {
+        amount -= state.shield;
+        state.shield = 0;
+      }
+    }
+
+    if (amount > 0) {
+      state.health = Math.max(0, state.health - amount);
+    }
+
+    sounds.playPlayerHurt();
+    this.updateHUD();
+
+    // Damage flash
+    const flash = document.getElementById('hurt-screen');
+    flash.style.opacity = '1';
+    setTimeout(() => flash.style.opacity = '0', 200);
+
+    if (state.health <= 0) {
+      this.gameOver();
+    }
+  }
+
+  gameOver() {
+    state.active = false;
+    this.controls.unlock();
+
+    if (state.score > state.highScore) {
+      state.highScore = state.score;
+      localStorage.setItem('cyber_strike_highscore', state.highScore.toString());
+    }
+
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('final-score').textContent = state.score;
+    document.getElementById('overlay-high-score').textContent = state.highScore;
+    document.getElementById('final-wave').textContent = state.wave;
+    document.getElementById('final-kills').textContent = state.kills;
+    document.getElementById('game-over-screen').classList.remove('hidden');
+  }
+
+  updateHUD() {
+    document.getElementById('health-bar-fill').style.width = `${(state.health / state.maxHealth) * 100}%`;
+    document.getElementById('shield-bar-fill').style.width = `${(state.shield / state.maxShield) * 100}%`;
+    document.getElementById('health-text').textContent = `${Math.ceil(state.shield)} | ${Math.ceil(state.health)}`;
+
+    const dashPercent = Math.max(0, Math.min(100, ((state.dashMaxCooldown - state.dashCooldown) / state.dashMaxCooldown) * 100));
+    document.getElementById('dash-bar-fill').style.width = `${dashPercent}%`;
+    document.getElementById('dash-status').textContent = state.dashCooldown <= 0 ? 'READY' : 'CHARGING';
+
+    document.getElementById('ammo-clip').textContent = state.ammoClip;
+    document.getElementById('ammo-reserve').textContent = state.ammoReserve;
+    document.getElementById('wave-num').textContent = state.wave;
+    document.getElementById('enemy-count').textContent = state.enemiesLeft;
+    document.getElementById('score-val').textContent = state.score;
+    document.getElementById('high-score-val').textContent = state.highScore;
+
+    const reloadWarn = document.getElementById('reload-warning');
+    if (state.ammoClip <= 3 && !state.isReloading && state.ammoReserve > 0) {
+      reloadWarn.textContent = "PRESS [R] TO RELOAD";
+      reloadWarn.classList.remove('hidden');
+    } else if (!state.isReloading) {
+      reloadWarn.classList.add('hidden');
+    }
+
+    const lowHealth = document.getElementById('low-health-warning');
+    if (state.health <= 30) {
+      lowHealth.classList.remove('hidden');
+    } else {
+      lowHealth.classList.add('hidden');
+    }
+  }
+
+  updatePlayer(delta) {
+    if (!state.active || state.paused) return;
+
+    // Shield Recharge logic
+    if (state.shieldDelayTimer > 0) {
+      state.shieldDelayTimer -= delta;
+    } else if (state.shield < state.maxShield) {
+      state.shield = Math.min(state.maxShield, state.shield + 20 * delta);
+      this.updateHUD();
+    }
+
+    // Dash Cooldown logic
+    if (state.dashCooldown > 0) {
+      state.dashCooldown = Math.max(0, state.dashCooldown - delta);
+      this.updateHUD();
+    }
+
+    // Combo Timer logic
+    if (state.comboTimer > 0) {
+      state.comboTimer -= delta;
+      if (state.comboTimer <= 0) {
+        state.comboCount = 0;
+        document.getElementById('combo-banner').classList.add('hidden');
+      }
+    }
+
+    // Powerup Timer logic
+    if (state.powerup.active) {
+      state.powerup.timer -= delta;
+      if (state.powerup.timer <= 0) {
+        state.powerup.active = false;
+        state.powerup.type = null;
+        document.getElementById('powerup-banner').classList.add('hidden');
+      }
+    }
+
+    let baseSpeed = this.moveState.sprint ? 15.5 : 9.8;
+    if (state.powerup.type === 'speed') baseSpeed *= 1.4;
+
+    // Responsive ground vs air friction and acceleration tuning
+    const groundFriction = 12.0;
+    const airFriction = 2.0;
+    const currentFriction = this.isGrounded ? groundFriction : airFriction;
+
+    // Apply friction decay
+    this.velocity.x -= this.velocity.x * currentFriction * delta;
+    this.velocity.z -= this.velocity.z * currentFriction * delta;
+
+    // Gravity (with snappy apex acceleration for crisp jump feel)
+    const gravity = this.velocity.y < 0 ? 32 : 26;
+    this.velocity.y -= gravity * delta;
+
+    // Coyote time tracking
+    if (this.isGrounded) {
+      this.coyoteTime = 0.12;
+    } else {
+      this.coyoteTime = Math.max(0, this.coyoteTime - delta);
+    }
+
+    // Buffer jump handle
+    if (this.jumpRequested && (this.isGrounded || this.coyoteTime > 0)) {
+      this.velocity.y = 9.8;
+      this.isGrounded = false;
+      this.coyoteTime = 0;
+      sounds.playJump();
+    }
+    this.jumpRequested = false;
+
+    // Direct vectors relative to camera orientation
+    const forwardVec = new THREE.Vector3();
+    this.camera.getWorldDirection(forwardVec);
+    forwardVec.y = 0;
+    forwardVec.normalize();
+
+    const sideVec = new THREE.Vector3();
+    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
+
+    const inputDir = new THREE.Vector3();
+    if (this.moveState.forward) inputDir.add(forwardVec);
+    if (this.moveState.backward) inputDir.add(forwardVec.clone().negate());
+    if (this.moveState.left) inputDir.add(sideVec);
+    if (this.moveState.right) inputDir.add(sideVec.clone().negate());
+
+    if (inputDir.lengthSq() > 0) {
+      inputDir.normalize();
+      const accelRate = this.isGrounded ? 55.0 : 18.0;
+      this.velocity.add(inputDir.multiplyScalar(baseSpeed * accelRate * delta));
+
+      // Clamp horizontal speed for precise handling
+      const horizVel = new THREE.Vector3(this.velocity.x, 0, this.velocity.z);
+      const maxAllowedSpeed = baseSpeed * (state.isDashing ? 1.8 : 1.25);
+      if (horizVel.length() > maxAllowedSpeed) {
+        horizVel.normalize().multiplyScalar(maxAllowedSpeed);
+        this.velocity.x = horizVel.x;
+        this.velocity.z = horizVel.z;
+      }
+    }
+
+    // Dynamic Head Bobbing & Responsive Strafe Tilt
+    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
+    if (isMoving && this.isGrounded) {
+      this.bobTimer += delta * (this.moveState.sprint ? 16 : 11);
+      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.05;
+    } else {
+      this.bobTimer = 0;
+    }
+
+    let targetTilt = 0;
+    if (this.moveState.left) targetTilt = 0.032;
+    if (this.moveState.right) targetTilt = -0.032;
+    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 12);
+    this.camera.rotation.z = this.cameraTilt;
+
+    // Check Landing Impact & Dash state expiration
+    if (state.isDashing) {
+      state.dashDuration -= delta;
+      if (state.dashDuration <= 0) {
+        state.isDashing = false;
+      }
+    }
+
+    if (!this.wasGrounded && this.isGrounded) {
+      sounds.playLanding();
+      this.screenShake = 0.14;
+    }
+    this.wasGrounded = this.isGrounded;
+
+    // Proposed movement step
+    const pos = this.camera.position.clone();
+    pos.x += this.velocity.x * delta;
+    pos.z += this.velocity.z * delta;
+
+    // Collision detection against AABBs
+    const playerRadius = 0.6;
+    for (const box of this.obstacles) {
+      const closestX = Math.max(box.min.x, Math.min(pos.x, box.max.x));
+      const closestZ = Math.max(box.min.z, Math.min(pos.z, box.max.z));
+      const distX = pos.x - closestX;
+      const distZ = pos.z - closestZ;
+      const distanceSq = distX * distX + distZ * distZ;
+
+      if (distanceSq < playerRadius * playerRadius) {
+        // Simple sphere resolution
+        const distance = Math.sqrt(distanceSq);
+        if (distance > 0) {
+          const overlap = playerRadius - distance;
+          pos.x += (distX / distance) * overlap;
+          pos.z += (distZ / distance) * overlap;
+        }
+      }
+    }
+
+    this.camera.position.x = pos.x;
+    this.camera.position.z = pos.z;
+
+    // Vertical Jump & Floor Floor Collision
+    this.camera.position.y += this.velocity.y * delta;
+    if (this.camera.position.y <= this.playerHeight) {
+      this.camera.position.y = this.playerHeight;
+      this.velocity.y = 0;
+      this.isGrounded = true;
+    }
+  }
+
   updateEnemies(delta) {
     const playerPos = this.camera.position;
     const now = performance.now();
@@ -3085,679 +2099,15 @@ body {
 
     // Update enemy projectiles with difficulty-scaled projectile speed
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      const pr = this.projectiles[i];
-      const projSpeed = (pr.speed || 20) * diffMultiplier;
-      pr.mesh.position.addScaledVector(pr.dir, projSpeed * delta);
-      if (pr.mesh.position.distanceTo(playerPos) < 1.2) {
+      const projPr = this.projectiles[i];
+      const projSpeed = (projPr.speed || 20) * diffMultiplier;
+      projPr.mesh.position.addScaledVector(projPr.dir, projSpeed * delta);
+      if (projPr.mesh.position.distanceTo(playerPos) < 1.2) {
         this.takeDamage(16 * diffMultiplier);
-        this.scene.remove(pr.mesh);
+        this.recycleProjectile(projPr);
         this.projectiles.splice(i, 1);
-      } else if (pr.mesh.position.length() > 120) {
-        this.scene.remove(pr.mesh);
-        this.projectiles.splice(i, 1);
-      }
-    }
-  }
->>>>
-
-  spawnEnemy() {
-    const dist = 22 + Math.random() * 20;
-    const angle = Math.random() * Math.PI * 2;
-    const x = Math.cos(angle) * dist;
-    const z = Math.sin(angle) * dist;
-
-    const types = ['scout', 'tank', 'shooter'];
-    const type = types[Math.floor(Math.random() * types.length)];
-    const group = new THREE.Group();
-
-    let colorHex = 0xff0044;
-    let radius = 0.7;
-    let hp = 50 + state.wave * 15;
-    let speed = 3.5 + Math.min(state.wave * 0.3, 4);
-
-    if (type === 'scout') {
-      colorHex = 0xff00bb;
-      radius = 0.5;
-      hp *= 0.6;
-      speed *= 1.4;
-    } else if (type === 'tank') {
-      colorHex = 0xffaa00;
-      radius = 1.1;
-      hp *= 2.2;
-      speed *= 0.7;
-    } else if (type === 'shooter') {
-      colorHex = 0x00f0ff;
-      radius = 0.8;
-    }
-
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 16, 16),
-      new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.3, metalness: 0.8 })
-    );
-    core.position.y = radius + 0.3;
-    core.castShadow = true;
-    group.add(core);
-
-    // Glowing Head / Core
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(radius * 0.4, 12, 12),
-      new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 1.2 })
-    );
-    head.position.set(0, radius + 0.4, radius * 0.75);
-    head.name = 'head';
-    group.add(head);
-
-    const ringGeo = new THREE.TorusGeometry(radius * 1.4, 0.05, 8, 24);
-    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true }));
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = radius + 0.3;
-    group.add(ring);
-
-    group.position.set(x, 0, z);
-    this.scene.add(group);
-
-    this.enemies.push({
-      mesh: group,
-      head: head,
-      ring: ring,
-      type: type,
-      hp: hp,
-      maxHp: hp,
-      speed: speed,
-      lastAttack: 0,
-      attackCooldown: type === 'shooter' ? 2200 : 1000
-    });
-  }
-
-  spawnPickup(position) {
-    const rand = Math.random();
-    let type = 'ammo';
-    let colorHex = 0x00f0ff;
-
-    if (rand < 0.25) {
-      type = 'health';
-      colorHex = 0x00ff88;
-    } else if (rand < 0.45) {
-      type = 'shield';
-      colorHex = 0x00bfff;
-    } else if (rand < 0.65) {
-      type = 'damage';
-      colorHex = 0xff0055;
-    } else if (rand < 0.85) {
-      type = 'speed';
-      colorHex = 0xffff00;
-    }
-
-    const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-    const mat = new THREE.MeshStandardMaterial({
-      color: colorHex,
-      emissive: colorHex,
-      emissiveIntensity: 0.8
-    });
-
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.copy(position);
-    mesh.position.y = 0.6;
-    this.scene.add(mesh);
-
-    this.pickups.push({ mesh: mesh, type: type });
-  }
-
-  performDash() {
-    if (state.dashCooldown > 0 || !state.active || state.paused) return;
-
-    sounds.playDash();
-    state.dashCooldown = state.dashMaxCooldown;
-    state.isDashing = true;
-    state.dashDuration = 0.18;
-
-    const dashDir = new THREE.Vector3();
-    this.camera.getWorldDirection(dashDir);
-    dashDir.y = 0;
-    dashDir.normalize();
-
-    this.velocity.add(dashDir.multiplyScalar(32));
-    this.createSparks(this.camera.position, 0x00f0ff);
-  }
-
-  shoot() {
-    const now = performance.now();
-    const weapon = WEAPONS[state.currentWeapon];
-
-    if (now - this.lastShotTime < weapon.fireRate) return;
-    if (state.isReloading) return;
-
-    if (state.ammoClip <= 0) {
-      this.reloadWeapon();
-      return;
-    }
-
-    this.lastShotTime = now;
-    state.ammoClip--;
-    this.updateHUD();
-
-    if (state.currentWeapon === 0) sounds.playGunshot();
-    else if (state.currentWeapon === 1) sounds.playShotgun();
-    else if (state.currentWeapon === 2) sounds.playRailgun();
-    else sounds.playPulseSMG();
-
-    this.muzzleFlashLight.color.setHex(weapon.color);
-    this.muzzleFlashLight.intensity = 5;
-    this.muzzleFlashMesh.material.opacity = 1;
-    setTimeout(() => {
-      this.muzzleFlashLight.intensity = 0;
-      this.muzzleFlashMesh.material.opacity = 0;
-    }, 45);
-
-    // Aim down sights reduces spread and recoil for superior precision
-    const aimMultiplier = state.isAiming ? 0.5 : 1.0;
-
-    this.weaponRecoil.z = weapon.recoilZ * aimMultiplier;
-    this.weaponRecoil.rotX = weapon.recoilRot * aimMultiplier;
-    this.screenShake = weapon.recoilZ * 0.45 * aimMultiplier;
-
-    // Collect muzzle world position for authentic tracer origin
-    const muzzleWorldPos = new THREE.Vector3();
-    this.muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
-
-    for (let p = 0; p < weapon.pellets; p++) {
-      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
-
-      // Collect all enemy meshes and environment obstacles for precise hitscan raycasting
-      const enemyMeshes = this.enemies.map(e => e.mesh);
-      const enemyIntersects = this.raycaster.intersectObjects(enemyMeshes, true);
-      const obstacleIntersects = this.raycaster.intersectObjects(this.scene.children, true);
-
-      // Filter obstacle intersects to only environment geometry (exclude enemies/particles)
-      const validObstacles = obstacleIntersects.filter(hit => {
-        let obj = hit.object;
-        while (obj.parent && obj !== this.scene) {
-          if (this.enemies.some(e => e.mesh === obj)) return false;
-          obj = obj.parent;
-        }
-        return true;
-      });
-
-      let hitPoint = null;
-      let hitEnemy = null;
-      let isHeadshot = false;
-      let closestDistance = Infinity;
-
-      if (enemyIntersects.length > 0) {
-        closestDistance = enemyIntersects[0].distance;
-        hitPoint = enemyIntersects[0].point;
-        let obj = enemyIntersects[0].object;
-        isHeadshot = obj.name === 'head';
-        while (obj.parent && !this.enemies.some(e => e.mesh === obj)) {
-          obj = obj.parent;
-        }
-        hitEnemy = this.enemies.find(e => e.mesh === obj);
-      }
-
-      // Check if wall/obstacle is closer than the enemy hit
-      if (validObstacles.length > 0 && validObstacles[0].distance < closestDistance) {
-        hitPoint = validObstacles[0].point;
-        hitEnemy = null;
-        isHeadshot = false;
-      } else if (!hitPoint && validObstacles.length > 0) {
-        hitPoint = validObstacles[0].point;
-      }
-
-      if (hitPoint) {
-        if (hitEnemy) {
-          const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
-          const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
-          hitEnemy.hp -= dmg;
-          sounds.playHit();
-          this.triggerHitMarker(isHeadshot);
-          this.showDamagePopup(hitPoint, dmg, isHeadshot);
-          this.createSparks(hitPoint, weapon.color);
-
-          if (state.currentWeapon === 2) {
-            this.createRailgunBeam(muzzleWorldPos, hitPoint);
-          } else {
-            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
-          }
-
-          if (hitEnemy === state.boss) {
-            const fill = Math.max(0, (hitEnemy.hp / hitEnemy.maxHp) * 100);
-            document.getElementById('boss-bar-fill').style.width = `${fill}%`;
-          }
-
-          if (hitEnemy.hp <= 0) {
-            this.destroyEnemy(hitEnemy);
-          }
-        } else {
-          // Environment wall/obstacle hit feedback
-          this.createSparks(hitPoint, 0xffaa00);
-          if (state.currentWeapon === 2) {
-            this.createRailgunBeam(muzzleWorldPos, hitPoint);
-          } else {
-            this.createTracerLine(muzzleWorldPos, hitPoint, weapon.color);
-          }
-        }
-      }
-    }
-
-    if (state.ammoClip === 0) {
-      this.reloadWeapon();
-    }
-  }
-
-  showDamagePopup(worldPos, damage, isHeadshot) {
-    const screenVec = worldPos.clone().project(this.camera);
-    if (screenVec.z > 1) return;
-    const x = (screenVec.x * 0.5 + 0.5) * window.innerWidth;
-    const y = (-(screenVec.y * 0.5) + 0.5) * window.innerHeight;
-
-    const pop = document.createElement('div');
-    pop.className = `damage-popup ${isHeadshot ? 'headshot' : ''}`;
-    pop.textContent = isHeadshot ? `CRIT ${damage}` : damage;
-    pop.style.left = `${x}px`;
-    pop.style.top = `${y}px`;
-    document.body.appendChild(pop);
-    setTimeout(() => pop.remove(), 600);
-  }
-
-  createTracerLine(start, end, colorHex) {
-    const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.7 });
-    const line = new THREE.Line(geo, mat);
-    this.scene.add(line);
-    setTimeout(() => this.scene.remove(line), 40);
-  }
-
-  createRailgunBeam(startPos, endPos) {
-    const dir = new THREE.Vector3().subVectors(endPos, startPos);
-    const dist = dir.length();
-    const geo = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
-    geo.rotateX(Math.PI / 2);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.9 });
-    const beam = new THREE.Mesh(geo, mat);
-    beam.position.copy(startPos).add(endPos).multiplyScalar(0.5);
-    beam.lookAt(endPos);
-    this.scene.add(beam);
-
-    const startTime = performance.now();
-    const animateBeam = () => {
-      const elapsed = (performance.now() - startTime) / 180;
-      if (elapsed >= 1) {
-        this.scene.remove(beam);
-      } else {
-        mat.opacity = (1 - elapsed) * 0.9;
-        beam.scale.set(1 - elapsed * 0.5, 1, 1 - elapsed * 0.5);
-        requestAnimationFrame(animateBeam);
-      }
-    };
-    animateBeam();
-  }
-
-  destroyEnemy(enemy) {
-    sounds.playEnemyDeath();
-    sounds.playKill();
-    this.triggerHitMarker(true);
-    this.createExplosion(enemy.mesh.position);
-
-    if (enemy === state.boss) {
-      state.boss = null;
-      document.getElementById('boss-bar-container').classList.add('hidden');
-      for (let k = 0; k < 3; k++) this.spawnPickup(enemy.mesh.position);
-    } else if (Math.random() < 0.5) {
-      this.spawnPickup(enemy.mesh.position);
-    }
-
-    this.scene.remove(enemy.mesh);
-    this.enemies = this.enemies.filter(e => e !== enemy);
-
-    // Multikill combo handling
-    state.comboCount++;
-    state.comboTimer = 2.5;
-
-    let scoreGain = 150 * Math.min(state.comboCount, 5);
-    if (enemy.type === 'boss') scoreGain = 2000;
-
-    state.score += scoreGain;
-    state.kills++;
-    state.enemiesLeft--;
-
-    if (state.comboCount >= 2) {
-      const comboBanner = document.getElementById('combo-banner');
-      comboBanner.textContent = `${state.comboCount}x MULTIKILL! +${scoreGain}`;
-      comboBanner.classList.remove('hidden');
-    }
-
-    this.updateHUD();
-
-    if (state.enemiesLeft <= 0 && this.enemies.length === 0) {
-      setTimeout(() => {
-        if (state.active) this.startWave(state.wave + 1);
-      }, 1500);
-    }
-  }
-
-  reloadWeapon() {
-    if (state.isReloading || state.ammoClip === state.clipSize || state.ammoReserve <= 0) return;
-
-    state.isReloading = true;
-    sounds.playReload();
-    const warning = document.getElementById('reload-warning');
-    warning.textContent = 'RELOADING...';
-    warning.classList.remove('hidden');
-
-    // Reload rotation animation
-    this.weaponRecoil.rotX = -0.4;
-
-    setTimeout(() => {
-      const needed = state.clipSize - state.ammoClip;
-      const amount = Math.min(needed, state.ammoReserve);
-      state.ammoClip += amount;
-      state.ammoReserve -= amount;
-      state.isReloading = false;
-      warning.classList.add('hidden');
-      this.updateHUD();
-    }, 1200);
-  }
-
-  triggerHitMarker(isKill = false) {
-    const marker = document.getElementById('hit-marker');
-    marker.classList.remove('active', 'kill');
-    void marker.offsetWidth; // force reflow
-    marker.classList.add('active');
-    if (isKill) marker.classList.add('kill');
-    setTimeout(() => marker.classList.remove('active', 'kill'), 120);
-  }
-
-  createSparks(pos, colorHex) {
-    for (let i = 0; i < 8; i++) {
-      const geo = new THREE.SphereGeometry(0.04, 4, 4);
-      const mat = new THREE.MeshBasicMaterial({ color: colorHex });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      this.scene.add(p);
-
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 6,
-        (Math.random() - 0.5) * 6,
-        (Math.random() - 0.5) * 6
-      );
-
-      this.particles.push({ mesh: p, vel: vel, life: 0.25 });
-    }
-  }
-
-  createExplosion(pos) {
-    for (let i = 0; i < 24; i++) {
-      const size = 0.08 + Math.random() * 0.12;
-      const geo = new THREE.BoxGeometry(size, size, size);
-      const mat = new THREE.MeshBasicMaterial({ color: Math.random() < 0.5 ? 0xff0044 : 0x00f0ff });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.copy(pos);
-      p.position.y += 1.0;
-      this.scene.add(p);
-
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        Math.random() * 8 + 2,
-        (Math.random() - 0.5) * 10
-      );
-
-      this.particles.push({ mesh: p, vel: vel, life: 0.6 });
-    }
-  }
-
-  takeDamage(amount) {
-    if (!state.active || state.health <= 0) return;
-
-    state.shieldDelayTimer = 3.0; // Reset shield recharge delay
-
-    if (state.shield > 0) {
-      if (state.shield >= amount) {
-        state.shield -= amount;
-        amount = 0;
-      } else {
-        amount -= state.shield;
-        state.shield = 0;
-      }
-    }
-
-    if (amount > 0) {
-      state.health = Math.max(0, state.health - amount);
-    }
-
-    sounds.playPlayerHurt();
-    this.updateHUD();
-
-    // Damage flash
-    const flash = document.getElementById('hurt-screen');
-    flash.style.opacity = '1';
-    setTimeout(() => flash.style.opacity = '0', 200);
-
-    if (state.health <= 0) {
-      this.gameOver();
-    }
-  }
-
-  gameOver() {
-    state.active = false;
-    this.controls.unlock();
-
-    if (state.score > state.highScore) {
-      state.highScore = state.score;
-      localStorage.setItem('cyber_strike_highscore', state.highScore.toString());
-    }
-
-    document.getElementById('hud').classList.add('hidden');
-    document.getElementById('final-score').textContent = state.score;
-    document.getElementById('overlay-high-score').textContent = state.highScore;
-    document.getElementById('final-wave').textContent = state.wave;
-    document.getElementById('final-kills').textContent = state.kills;
-    document.getElementById('game-over-screen').classList.remove('hidden');
-  }
-
-  updateHUD() {
-    document.getElementById('health-bar-fill').style.width = `${(state.health / state.maxHealth) * 100}%`;
-    document.getElementById('shield-bar-fill').style.width = `${(state.shield / state.maxShield) * 100}%`;
-    document.getElementById('health-text').textContent = `${Math.ceil(state.shield)} | ${Math.ceil(state.health)}`;
-
-    const dashPercent = Math.max(0, Math.min(100, ((state.dashMaxCooldown - state.dashCooldown) / state.dashMaxCooldown) * 100));
-    document.getElementById('dash-bar-fill').style.width = `${dashPercent}%`;
-    document.getElementById('dash-status').textContent = state.dashCooldown <= 0 ? 'READY' : 'CHARGING';
-
-    document.getElementById('ammo-clip').textContent = state.ammoClip;
-    document.getElementById('ammo-reserve').textContent = state.ammoReserve;
-    document.getElementById('wave-num').textContent = state.wave;
-    document.getElementById('enemy-count').textContent = state.enemiesLeft;
-    document.getElementById('score-val').textContent = state.score;
-    document.getElementById('high-score-val').textContent = state.highScore;
-
-    const reloadWarn = document.getElementById('reload-warning');
-    if (state.ammoClip <= 3 && !state.isReloading && state.ammoReserve > 0) {
-      reloadWarn.textContent = "PRESS [R] TO RELOAD";
-      reloadWarn.classList.remove('hidden');
-    } else if (!state.isReloading) {
-      reloadWarn.classList.add('hidden');
-    }
-
-    const lowHealth = document.getElementById('low-health-warning');
-    if (state.health <= 30) {
-      lowHealth.classList.remove('hidden');
-    } else {
-      lowHealth.classList.add('hidden');
-    }
-  }
-
-  updatePlayer(delta) {
-    if (!state.active || state.paused) return;
-
-    // Shield Recharge logic
-    if (state.shieldDelayTimer > 0) {
-      state.shieldDelayTimer -= delta;
-    } else if (state.shield < state.maxShield) {
-      state.shield = Math.min(state.maxShield, state.shield + 20 * delta);
-      this.updateHUD();
-    }
-
-    // Dash Cooldown logic
-    if (state.dashCooldown > 0) {
-      state.dashCooldown = Math.max(0, state.dashCooldown - delta);
-      this.updateHUD();
-    }
-
-    // Combo Timer logic
-    if (state.comboTimer > 0) {
-      state.comboTimer -= delta;
-      if (state.comboTimer <= 0) {
-        state.comboCount = 0;
-        document.getElementById('combo-banner').classList.add('hidden');
-      }
-    }
-
-    // Powerup Timer logic
-    if (state.powerup.active) {
-      state.powerup.timer -= delta;
-      if (state.powerup.timer <= 0) {
-        state.powerup.active = false;
-        state.powerup.type = null;
-        document.getElementById('powerup-banner').classList.add('hidden');
-      }
-    }
-
-    let moveSpeed = this.moveState.sprint ? 14 : 9;
-    if (state.powerup.type === 'speed') moveSpeed *= 1.4;
-
-    const friction = 10;
-
-    // Friction decay
-    this.velocity.x -= this.velocity.x * friction * delta;
-    this.velocity.z -= this.velocity.z * friction * delta;
-
-    // Gravity
-    this.velocity.y -= 25 * delta;
-
-    // Direct vectors relative to camera orientation
-    const forwardVec = new THREE.Vector3();
-    this.camera.getWorldDirection(forwardVec);
-    forwardVec.y = 0;
-    forwardVec.normalize();
-
-    const sideVec = new THREE.Vector3();
-    sideVec.crossVectors(this.camera.up, forwardVec).normalize();
-
-    if (this.moveState.forward) this.velocity.add(forwardVec.clone().multiplyScalar(moveSpeed * delta * 40));
-    if (this.moveState.backward) this.velocity.add(forwardVec.clone().multiplyScalar(-moveSpeed * delta * 40));
-    if (this.moveState.left) this.velocity.add(sideVec.clone().multiplyScalar(moveSpeed * delta * 40));
-    if (this.moveState.right) this.velocity.add(sideVec.clone().multiplyScalar(-moveSpeed * delta * 40));
-
-    // Head Bobbing & Strafe Tilt
-    const isMoving = this.moveState.forward || this.moveState.backward || this.moveState.left || this.moveState.right;
-    if (isMoving && this.isGrounded) {
-      this.bobTimer += delta * (this.moveState.sprint ? 14 : 10);
-      this.camera.position.y = this.playerHeight + Math.sin(this.bobTimer) * 0.04;
-    } else {
-      this.bobTimer = 0;
-    }
-
-    let targetTilt = 0;
-    if (this.moveState.left) targetTilt = 0.02;
-    if (this.moveState.right) targetTilt = -0.02;
-    this.cameraTilt = THREE.MathUtils.lerp(this.cameraTilt, targetTilt, delta * 10);
-    this.camera.rotation.z = this.cameraTilt;
-
-    // Check Landing Impact
-    if (!this.wasGrounded && this.isGrounded) {
-      sounds.playLanding();
-      this.screenShake = 0.12;
-    }
-    this.wasGrounded = this.isGrounded;
-
-    // Proposed movement step
-    const pos = this.camera.position.clone();
-    pos.x += this.velocity.x * delta;
-    pos.z += this.velocity.z * delta;
-
-    // Collision detection against AABBs
-    const playerRadius = 0.6;
-    for (const box of this.obstacles) {
-      const closestX = Math.max(box.min.x, Math.min(pos.x, box.max.x));
-      const closestZ = Math.max(box.min.z, Math.min(pos.z, box.max.z));
-      const distX = pos.x - closestX;
-      const distZ = pos.z - closestZ;
-      const distanceSq = distX * distX + distZ * distZ;
-
-      if (distanceSq < playerRadius * playerRadius) {
-        // Simple sphere resolution
-        const distance = Math.sqrt(distanceSq);
-        if (distance > 0) {
-          const overlap = playerRadius - distance;
-          pos.x += (distX / distance) * overlap;
-          pos.z += (distZ / distance) * overlap;
-        }
-      }
-    }
-
-    this.camera.position.x = pos.x;
-    this.camera.position.z = pos.z;
-
-    // Vertical Jump & Floor Floor Collision
-    this.camera.position.y += this.velocity.y * delta;
-    if (this.camera.position.y <= this.playerHeight) {
-      this.camera.position.y = this.playerHeight;
-      this.velocity.y = 0;
-      this.isGrounded = true;
-    }
-  }
-
-  updateEnemies(delta) {
-    const playerPos = this.camera.position;
-    const now = performance.now();
-
-    this.enemies.forEach(enemy => {
-      enemy.ring.rotation.z += delta * 2;
-
-      const ePos = enemy.mesh.position;
-      const dir = new THREE.Vector3().subVectors(playerPos, ePos);
-      dir.y = 0;
-      const dist = dir.length();
-      dir.normalize();
-
-      if (enemy.type === 'boss') {
-        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
-        if (dist > 10) {
-          ePos.add(dir.multiplyScalar(enemy.speed * delta));
-        }
-        if (now - enemy.lastAttack > enemy.attackCooldown) {
-          enemy.lastAttack = now;
-          this.fireEnemyLaser(ePos);
-        }
-      } else if (enemy.type === 'shooter' && dist < 16 && dist > 7) {
-        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
-        if (now - enemy.lastAttack > enemy.attackCooldown) {
-          enemy.lastAttack = now;
-          this.fireEnemyLaser(ePos);
-        }
-      } else if (dist > 1.8) {
-        ePos.add(dir.multiplyScalar(enemy.speed * delta));
-        enemy.mesh.lookAt(playerPos.x, enemy.mesh.position.y, playerPos.z);
-      } else {
-        if (now - enemy.lastAttack > enemy.attackCooldown) {
-          enemy.lastAttack = now;
-          this.takeDamage(enemy.type === 'tank' ? 25 : 12);
-        }
-      }
-    });
-
-    // Update enemy projectiles
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      const pr = this.projectiles[i];
-      pr.mesh.position.addScaledVector(pr.dir, pr.speed * delta);
-      if (pr.mesh.position.distanceTo(playerPos) < 1.2) {
-        this.takeDamage(16);
-        this.scene.remove(pr.mesh);
-        this.projectiles.splice(i, 1);
-      } else if (pr.mesh.position.length() > 120) {
-        this.scene.remove(pr.mesh);
+      } else if (projPr.mesh.position.length() > 120) {
+        this.recycleProjectile(projPr);
         this.projectiles.splice(i, 1);
       }
     }
@@ -3765,15 +2115,61 @@ body {
 
   fireEnemyLaser(fromPos) {
     sounds.playLaser();
-    const geo = new THREE.SphereGeometry(0.2, 8, 8);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.copy(fromPos);
-    mesh.position.y += 1.0;
+    let mesh;
+    if (this.projectilePool.length > 0) {
+      const prObj = this.projectilePool.pop();
+      mesh = prObj.mesh;
+      mesh.position.copy(fromPos);
+      mesh.position.y += 1.0;
+      mesh.visible = true;
+    } else {
+      const geo = new THREE.SphereGeometry(0.2, 8, 8);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(fromPos);
+      mesh.position.y += 1.0;
+      this.scene.add(mesh);
+    }
 
     const dir = new THREE.Vector3().subVectors(this.camera.position, mesh.position).normalize();
-    this.scene.add(mesh);
     this.projectiles.push({ mesh: mesh, dir: dir, speed: 20 });
+  }
+
+  recycleProjectile(pr) {
+    pr.mesh.visible = false;
+    if (this.projectilePool.length < this.maxProjectilePoolSize) {
+      this.projectilePool.push(pr);
+    } else {
+      this.scene.remove(pr.mesh);
+      if (pr.mesh.geometry) pr.mesh.geometry.dispose();
+    }
+  }
+
+  spawnDebris(pos) {
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    for (let i = 0; i < 4; i++) {
+      let mesh;
+      if (this.debrisPool.length > 0) {
+        mesh = this.debrisPool.pop();
+        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5));
+        mesh.visible = true;
+      } else {
+        const geo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+        mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(pos);
+        this.scene.add(mesh);
+      }
+
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 6,
+        Math.random() * 6 + 1,
+        (Math.random() - 0.5) * 6
+      );
+
+      const debrisObj = { mesh: mesh, vel: vel, life: 1.2 };
+      if (!this.activeDebris) this.activeDebris = [];
+      this.activeDebris.push(debrisObj);
+    }
   }
 
   updatePickups() {
@@ -3880,11 +2276,55 @@ body {
       const p = this.particles[i];
       p.life -= delta;
       p.mesh.position.addScaledVector(p.vel, delta);
-      p.mesh.scale.multiplyScalar(0.95);
+      p.mesh.scale.multiplyScalar(0.96);
 
       if (p.life <= 0) {
-        this.scene.remove(p.mesh);
+        p.mesh.visible = false;
+        p.mesh.scale.set(1, 1, 1);
         this.particles.splice(i, 1);
+        if (this.particlePool.length < this.maxPoolSize) {
+          this.particlePool.push(p);
+        } else {
+          this.scene.remove(p.mesh);
+          p.mesh.geometry.dispose();
+        }
+      }
+    }
+
+    if (this.activeDebris) {
+      for (let i = this.activeDebris.length - 1; i >= 0; i--) {
+        const d = this.activeDebris[i];
+        d.life -= delta;
+        d.vel.y -= 9.8 * delta;
+        d.mesh.position.addScaledVector(d.vel, delta);
+        d.mesh.rotation.x += delta * 3;
+        d.mesh.rotation.y += delta * 4;
+
+        if (d.life <= 0 || d.mesh.position.y < 0) {
+          d.mesh.visible = false;
+          d.mesh.rotation.set(0, 0, 0);
+          this.activeDebris.splice(i, 1);
+          if (this.debrisPool.length < this.maxDebrisPoolSize) {
+            this.debrisPool.push(d.mesh);
+          } else {
+            this.scene.remove(d.mesh);
+            if (d.mesh.geometry) d.mesh.geometry.dispose();
+          }
+        }
+      }
+    }
+
+    for (let i = this.damagePopups.length - 1; i >= 0; i--) {
+      const pop = this.damagePopups[i];
+      pop.life -= delta;
+      if (pop.life <= 0) {
+        pop.el.style.display = 'none';
+        this.damagePopups.splice(i, 1);
+        if (this.damagePopupPool.length < this.maxPopupPoolSize) {
+          this.damagePopupPool.push(pop.el);
+        } else {
+          pop.el.remove();
+        }
       }
     }
   }
