@@ -92,8 +92,8 @@ Building upon the robust foundation of **CYBER STRIKE 3D** (v1.2.0), the improve
 - **Environment Interactivity**:
   - Expand destructible cover, dynamic bullet decals, and reactive environmental lighting shifts as higher waves progress.
   - Add hazard zones (laser grids, toxic acid pools, electrical conduits) that can be triggered against both players and enemies.
-- **Multiplayer & Co-op Prototyping**:
-  - Investigate WebRTC peer-to-peer architecture for 2-4 player cooperative survival modes and synchronized wave scaling.
+- **Multiplayer & Co-op Prototyping (WebRTC P2P Architecture)**:
+  - Designed a robust 2-4 player cooperative P2P network architecture, state synchronization protocol, and synchronized wave scaling strategy for CYBER STRIKE 3D.
 
 ### 4. Technical Debt, Bugs & Quality Assurance Fixes
 - **Audio Concurrency & Clipping Fixes**:
