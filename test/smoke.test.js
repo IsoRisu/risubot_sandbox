@@ -91,4 +91,24 @@ describe('Octree Spatial Partitioning Tests', () => {
     expect(game.hazardZones.some(h => h.type === 'acid')).toBe(true);
     expect(game.hazardZones.some(h => h.type === 'conduit')).toBe(true);
   });
+});describe('SoundSystem Voice Pool and Compressor Tests', () => {
+  it('initializes master compressor and voice allocation pool correctly', () => {
+    const sounds = new SoundSystem();
+    sounds.init();
+    expect(sounds.ctx).toBeDefined();
+    expect(sounds.masterCompressor).toBeDefined();
+    const dest = sounds.getDestination();
+    expect(dest).toBe(sounds.masterCompressor);
+
+    const osc = sounds.acquireOscillator('square');
+    expect(osc).toBeDefined();
+    expect(sounds.oscillatorPool.length).toBe(0);
+    sounds.releaseOscillator(osc);
+    expect(sounds.oscillatorPool.length).toBe(1);
+
+    const gain = sounds.acquireGain();
+    expect(gain).toBeDefined();
+    sounds.releaseGain(gain);
+    expect(sounds.gainPool.length).toBe(1);
+  });
 });

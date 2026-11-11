@@ -12,6 +12,7 @@ class SoundSystem {
     this.oscillatorPool = [];
     this.gainPool = [];
     this.bgmTimer = null;
+    this.masterCompressor = null;
   }
 
   init() {
@@ -22,6 +23,22 @@ class SoundSystem {
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    if (!this.masterCompressor && this.ctx) {
+      this.masterCompressor = this.ctx.createDynamicsCompressor();
+      this.masterCompressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
+      this.masterCompressor.knee.setValueAtTime(6, this.ctx.currentTime);
+      this.masterCompressor.ratio.setValueAtTime(4, this.ctx.currentTime);
+      this.masterCompressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
+      this.masterCompressor.release.setValueAtTime(0.1, this.ctx.currentTime);
+      this.masterCompressor.connect(this.ctx.destination);
+    }
+  }
+
+  getDestination() {
+    if (!this.masterCompressor && this.ctx) {
+      this.init();
+    }
+    return this.masterCompressor || this.ctx.destination;
   }
 
   acquireOscillator(type = 'sine') {
@@ -104,7 +121,7 @@ class SoundSystem {
 
     whiteNoise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
-    noiseGain.connect(this.ctx.destination);
+    noiseGain.connect(this.getDestination());
 
     // Low punch synth
     const osc = this.ctx.createOscillator();
@@ -117,7 +134,7 @@ class SoundSystem {
     oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
 
     osc.connect(oscGain);
-    oscGain.connect(this.ctx.destination);
+    oscGain.connect(this.getDestination());
 
     whiteNoise.start(now);
     osc.start(now);
@@ -135,7 +152,7 @@ class SoundSystem {
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
 
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.getDestination());
       osc.start(now);
       osc.stop(now + 0.08);
 
@@ -246,7 +263,7 @@ class SoundSystem {
         gain.gain.setValueAtTime(0.2, startTime);
         gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.12);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.getDestination());
         osc.start(startTime);
         osc.stop(startTime + 0.12);
 
@@ -272,7 +289,7 @@ class SoundSystem {
       gain.gain.setValueAtTime(0.8, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
       noise.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.getDestination());
       noise.start(now);
 
       setTimeout(() => {
@@ -495,7 +512,7 @@ class SoundSystem {
         gain.gain.setValueAtTime(0.25, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.getDestination());
         osc.start(now);
         osc.stop(now + 0.08);
       }
@@ -509,7 +526,7 @@ class SoundSystem {
         gain.gain.setValueAtTime(0.06, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.getDestination());
         osc.start(now);
         osc.stop(now + 0.1);
       }
