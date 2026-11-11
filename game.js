@@ -931,24 +931,27 @@ class Game {
     centerPointLight.position.set(0, 8, 0);
     this.scene.add(centerPointLight);
 
-    // Procedural Obstacles / Cover Crates / Pillars
+    // Procedural Obstacles / Cover Crates / Pillars (Destructible Cover System)
     const boxMat = new THREE.MeshStandardMaterial({ color: 0x182a45, roughness: 0.3, metalness: 0.8 });
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.2, metalness: 0.9, wireframe: false });
 
     const obstacleConfigs = [
-      // Central pillars
-      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [-15, 5, -15], mat: boxMat },
-      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [15, 5, -15], mat: boxMat },
-      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [-15, 5, 15], mat: boxMat },
-      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [15, 5, 15], mat: boxMat },
-      // Cover crates
-      { geo: new THREE.BoxGeometry(3, 3, 3), pos: [0, 1.5, -10], mat: boxMat },
-      { geo: new THREE.BoxGeometry(3, 3, 3), pos: [-8, 1.5, 0], mat: boxMat },
-      { geo: new THREE.BoxGeometry(3, 3, 3), pos: [8, 1.5, 0], mat: boxMat },
-      { geo: new THREE.BoxGeometry(4, 2, 8), pos: [0, 1, 15], mat: boxMat },
-      { geo: new THREE.BoxGeometry(8, 2, 4), pos: [-25, 1, 0], mat: boxMat },
-      { geo: new THREE.BoxGeometry(8, 2, 4), pos: [25, 1, 0], mat: boxMat },
+      // Central pillars (indestructible heavy architecture)
+      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [-15, 5, -15], mat: boxMat, destructible: false },
+      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [15, 5, -15], mat: boxMat, destructible: false },
+      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [-15, 5, 15], mat: boxMat, destructible: false },
+      { geo: new THREE.BoxGeometry(4, 10, 4), pos: [15, 5, 15], mat: boxMat, destructible: false },
+      // Destructible Cover Crates & Barriers
+      { geo: new THREE.BoxGeometry(3, 3, 3), pos: [0, 1.5, -10], mat: boxMat, destructible: true, hp: 120 },
+      { geo: new THREE.BoxGeometry(3, 3, 3), pos: [-8, 1.5, 0], mat: boxMat, destructible: true, hp: 120 },
+      { geo: new THREE.BoxGeometry(3, 3, 3), pos: [8, 1.5, 0], mat: boxMat, destructible: true, hp: 120 },
+      { geo: new THREE.BoxGeometry(4, 2, 8), pos: [0, 1, 15], mat: boxMat, destructible: true, hp: 160 },
+      { geo: new THREE.BoxGeometry(8, 2, 4), pos: [-25, 1, 0], mat: boxMat, destructible: true, hp: 160 },
+      { geo: new THREE.BoxGeometry(8, 2, 4), pos: [25, 1, 0], mat: boxMat, destructible: true, hp: 160 },
     ];
+
+    if (!this.destructibleCovers) this.destructibleCovers = [];
+    this.destructibleCovers = [];
 
     obstacleConfigs.forEach(cfg => {
       const mesh = new THREE.Mesh(cfg.geo, cfg.mat);
@@ -959,6 +962,15 @@ class Game {
 
       const box = new THREE.Box3().setFromObject(mesh);
       this.obstacles.push(box);
+
+      if (cfg.destructible) {
+        this.destructibleCovers.push({
+          mesh: mesh,
+          box: box,
+          hp: cfg.hp,
+          maxHp: cfg.hp
+        });
+      }
     });
   }
 
@@ -1214,6 +1226,21 @@ class Game {
     state.kills = 0;
     state.wave = 1;
 
+    // Reset environmental lighting shifts
+    if (this.applyWaveLightingShift) {
+      this.applyWaveLightingShift(1);
+    }
+
+    // Reset bullet decals pool
+    if (this.bulletDecalPool) {
+      this.bulletDecalPool.forEach(d => {
+        this.scene.remove(d.mesh);
+        if (d.mesh.geometry) d.mesh.geometry.dispose();
+        if (d.mesh.material) d.mesh.material.dispose();
+      });
+      this.bulletDecalPool = [];
+    }
+
     this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
     this.enemies = [];
     if (this.octree) {
@@ -1275,6 +1302,11 @@ class Game {
     const count = isBossWave ? 1 : 4 + waveNumber * 3;
     state.enemiesLeft = count;
     this.updateHUD();
+
+    // Apply reactive environmental lighting shifts tied to higher waves
+    if (this.applyWaveLightingShift) {
+      this.applyWaveLightingShift(waveNumber);
+    }
 
     // Show wave banner
     const banner = document.getElementById('wave-banner');
@@ -1652,6 +1684,26 @@ class Game {
       }
 
       if (hitPoint) {
+        // Spawn dynamic bullet decal at hit surface with pooling & fading
+        this.spawnBulletDecal(hitPoint, obstacleIntersects.length > 0 ? obstacleIntersects[0].face.normal : new THREE.Vector3(0, 1, 0));
+
+        // Check if hit point hit any destructible cover object
+        if (this.destructibleCovers) {
+          this.destructibleCovers.forEach(cover => {
+            if (cover.box.containsPoint(hitPoint)) {
+              cover.hp -= weapon.damage;
+              this.createSparks(hitPoint, 0xffa000);
+              if (cover.hp <= 0 && cover.mesh.visible) {
+                cover.mesh.visible = false;
+                // Remove box from active obstacles collision array
+                this.obstacles = this.obstacles.filter(b => b !== cover.box);
+                this.createExplosion(hitPoint);
+                this.spawnDebris(hitPoint);
+              }
+            }
+          });
+        }
+
     if (hitEnemy) {
       shotLandedAny = true;
       const altDmgMult = state.altFireMode ? (state.currentWeapon === 0 ? 2.5 : (state.currentWeapon === 2 ? 1.8 : 0.8)) : 1.0;
@@ -2819,6 +2871,123 @@ class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  spawnBulletDecal(pos, normal) {
+    if (!this.bulletDecalPool) this.bulletDecalPool = [];
+    if (!this.activeDecals) this.activeDecals = [];
+
+    const maxDecals = 40;
+    let decalMesh;
+
+    if (this.bulletDecalPool.length > 0) {
+      decalMesh = this.bulletDecalPool.pop();
+      decalMesh.material.opacity = 0.85;
+      decalMesh.position.copy(pos).addScaledVector(normal, 0.01);
+      decalMesh.lookAt(pos.clone().add(normal));
+      decalMesh.visible = true;
+    } else {
+      const geo = new THREE.PlaneGeometry(0.12, 0.12);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false
+      });
+      decalMesh = new THREE.Mesh(geo, mat);
+      decalMesh.position.copy(pos).addScaledVector(normal, 0.01);
+      decalMesh.lookAt(pos.clone().add(normal));
+      this.scene.add(decalMesh);
+    }
+
+    const decalObj = {
+      mesh: decalMesh,
+      life: 8.0, // Fades out over 8 seconds
+      maxLife: 8.0
+    };
+
+    this.activeDecals.push(decalObj);
+
+    if (this.activeDecals.length > maxDecals) {
+      const oldest = this.activeDecals.shift();
+      oldest.mesh.visible = false;
+      this.bulletDecalPool.push(oldest.mesh);
+    }
+  }
+
+  updateDecals(delta) {
+    if (!this.activeDecals) return;
+    for (let i = this.activeDecals.length - 1; i >= 0; i--) {
+      const d = this.activeDecals[i];
+      d.life -= delta;
+      d.mesh.material.opacity = Math.max(0, (d.life / d.maxLife) * 0.85);
+
+      if (d.life <= 0) {
+        d.mesh.visible = false;
+        this.activeDecals.splice(i, 1);
+        if (this.bulletDecalPool.length < 50) {
+          this.bulletDecalPool.push(d.mesh);
+        } else {
+          this.scene.remove(d.mesh);
+          d.mesh.geometry.dispose();
+          d.mesh.material.dispose();
+        }
+      }
+    }
+  }
+
+  // Reactive Environmental Lighting Shifts Tied to Higher Wave Progression
+  applyWaveLightingShift(waveNumber) {
+    if (!this.scene) return;
+    const dirLight = this.scene.children.find(c => c.isDirectionalLight && c.position.x === 30);
+    const ambientLight = this.scene.children.find(c => c.isAmbientLight);
+    const pointLights = this.scene.children.filter(c => c.isPointLight && c !== this.muzzleFlashLight);
+
+    let targetBgColor = 0x02050a;
+    let dirColor = 0x00f0ff;
+    let ambientColor = 0x0f1d38;
+    let exposure = 1.2;
+
+    if (waveNumber >= 10) {
+      // Wave 10+: Crimson Cyber Overload / Blood Moon tier
+      targetBgColor = 0x140205;
+      dirColor = 0xff0044;
+      ambientColor = 0x2e0f15;
+      exposure = 1.4;
+    } else if (waveNumber >= 7) {
+      // Wave 7-9: Purple Neon Cyber Matrix tier
+      targetBgColor = 0x0d0214;
+      dirColor = 0xff00ff;
+      ambientColor = 0x220f2e;
+      exposure = 1.35;
+    } else if (waveNumber >= 4) {
+      // Wave 4-6: Amber Hardened Security tier
+      targetBgColor = 0x140a02;
+      dirColor = 0xffaa00;
+      ambientColor = 0x2e1f0f;
+      exposure = 1.25;
+    }
+
+    this.scene.background.setHex(targetBgColor);
+    if (this.scene.fog) {
+      this.scene.fog.color.setHex(targetBgColor);
+    }
+    if (dirLight) dirLight.color.setHex(dirColor);
+    if (ambientLight) ambientLight.color.setHex(ambientColor);
+    if (this.renderer) {
+      this.renderer.toneMappingExposure = exposure;
+    }
+
+    // Shift point lights dynamically
+    pointLights.forEach((pl, idx) => {
+      if (waveNumber >= 10) {
+        pl.color.setHex(idx % 2 === 0 ? 0xff0044 : 0xffaa00);
+      } else if (waveNumber >= 7) {
+        pl.color.setHex(idx % 2 === 0 ? 0xff00ff : 0x00f0ff);
+      } else if (waveNumber >= 4) {
+        pl.color.setHex(idx % 2 === 0 ? 0xffaa00 : 0x00ff88);
+      }
+    });
+  }
+
   animate() {
     requestAnimationFrame(() => this.animate());
 
@@ -2829,6 +2998,7 @@ class Game {
       this.updateEnemies(delta);
       this.updatePickups();
       this.updateParticles(delta);
+      this.updateDecals(delta);
       this.updateWeapon(delta);
       this.updateRadar();
     }
