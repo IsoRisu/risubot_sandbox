@@ -1020,4 +1020,103 @@ body {
   flex: 1;
   padding: 12px 20px;
   font-size: 14px;
+}/* Tactical Upgrade Station Shop Modal */
+.upgrade-modal {
+  max-width: 720px !important;
+  padding: 30px 40px !important;
+}
+
+.upgrade-credits-display {
+  font-size: 16px;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  background: rgba(0, 240, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  display: inline-block;
+}
+
+.upgrade-items-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+.upgrade-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.upgrade-card:hover {
+  border-color: #00f0ff;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+.upgrade-card h3 {
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.upgrade-card p {
+  font-size: 12px;
+  color: #88aacc;
+  line-height: 1.4;
+}
+
+.upgrade-cost {
+  font-size: 12px;
+  color: #ffaa00;
+  font-weight: bold;
+}
+
+.upgrade-buy-btn {
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  letter-spacing: 1px !important;
+  width: 100%;
+}
+
+.upgrade-buy-btn:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Heat Gauge & Alt-Fire UI */
+.fire-mode-badge {
+  font-size: 10px;
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  color: #00f0ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.heat-bar-bg {
+  height: 6px !important;
+  margin-top: 6px;
+  border-color: rgba(255, 0, 85, 0.4) !important;
+}
+
+#heat-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f0ff, #ff0055);
+  transition: width 0.05s linear;
+  box-shadow: 0 0 8px #ff0055;
 }

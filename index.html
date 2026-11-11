@@ -83,6 +83,42 @@
         </div>
       </div>
 
+      <!-- Upgrade Station Shop Modal Between Waves -->
+      <div id="upgrade-shop-screen" class="overlay hidden">
+        <div class="modal upgrade-modal">
+          <h1 class="game-title">TACTICAL UPGRADE STATION</h1>
+          <p class="game-desc">UPGRADE WEAPON SYSTEMS AND REINFORCE SUIT BETWEEN WAVES</p>
+          <div class="upgrade-credits-display">CREDITS (SCORE): <span id="shop-credits">0</span></div>
+          <div class="upgrade-items-grid">
+            <div class="upgrade-card" data-upgrade="damage">
+              <h3>WEAPON OVERCLOCK</h3>
+              <p>Increase weapon damage output (+20%)</p>
+              <div class="upgrade-cost">Cost: <span id="cost-damage">500</span> pts</div>
+              <button class="btn upgrade-buy-btn" id="buy-damage">ACQUIRE</button>
+            </div>
+            <div class="upgrade-card" data-upgrade="cooling">
+              <h3>HEAT SINK SYSTEM</h3>
+              <p>Faster heat cooling & higher overheat threshold</p>
+              <div class="upgrade-cost">Cost: <span id="cost-cooling">400</span> pts</div>
+              <button class="btn upgrade-buy-btn" id="buy-cooling">ACQUIRE</button>
+            </div>
+            <div class="upgrade-card" data-upgrade="shield">
+              <h3>SHIELD GENERATOR</h3>
+              <p>Increase max energy shield (+25)</p>
+              <div class="upgrade-cost">Cost: <span id="cost-shield">350</span> pts</div>
+              <button class="btn upgrade-buy-btn" id="buy-shield">ACQUIRE</button>
+            </div>
+            <div class="upgrade-card" data-upgrade="health">
+              <h3>ARMOR PLATING</h3>
+              <p>Restore and boost max health (+50)</p>
+              <div class="upgrade-cost">Cost: <span id="cost-health">300</span> pts</div>
+              <button class="btn upgrade-buy-btn" id="buy-health">ACQUIRE</button>
+            </div>
+          </div>
+          <button id="close-shop-btn" class="btn" style="margin-top: 24px;">PROCEED TO NEXT WAVE</button>
+        </div>
+      </div>
+
       <!-- Weapon Selector HUD Bar -->
       <div id="weapon-bar">
         <div class="weapon-slot active" id="wslot-0">
@@ -141,11 +177,21 @@
         <div class="status-block align-right">
           <div class="status-header">
             <span id="weapon-name">PLASMA RIFLE</span>
+            <span id="fire-mode-indicator" class="fire-mode-badge">STANDARD</span>
           </div>
           <div id="ammo-display">
             <span id="ammo-clip">30</span>
             <span class="ammo-slash">/</span>
             <span id="ammo-reserve">120</span>
+          </div>
+          <div id="heat-container" class="hidden">
+            <div class="status-header sub-header">
+              <span id="heat-label">WEAPON HEAT</span>
+              <span id="heat-status">0%</span>
+            </div>
+            <div class="bar-bg heat-bar-bg">
+              <div id="heat-bar-fill" style="width: 0%;"></div>
+            </div>
           </div>
         </div>
       </div>

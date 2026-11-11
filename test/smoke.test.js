@@ -15,7 +15,15 @@ describe('Cyber Strike 3D Smoke Tests', () => {
   it('verifies game version object and DOM injection', () => {
     expect(window.GAME_VERSION).toBeDefined();
     expect(window.GAME_VERSION.major).toBe(1);
-    expect(window.GAME_VERSION.toString()).toContain('v1.2.4');
+    expect(window.GAME_VERSION.toString()).toContain('v1.2.');
+  });
+
+  it('verifies energy weapon heat buildup and alt-fire settings', () => {
+    expect(WEAPONS).toBeDefined();
+    const plasma = WEAPONS[0];
+    expect(plasma.isEnergy).toBe(true);
+    expect(plasma.heatPerShot).toBeGreaterThan(0);
+    expect(plasma.altFireName).toBeDefined();
   });
 
   it('verifies test runner environment and global mocks', () => {

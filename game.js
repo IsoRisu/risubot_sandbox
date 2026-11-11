@@ -531,7 +531,11 @@ const WEAPONS = [
     spread: 0.02,
     recoilZ: 0.1,
     recoilRot: 0.12,
-    color: 0x00f0ff
+    color: 0x00f0ff,
+    isEnergy: true,
+    heatPerShot: 12,
+    altFireName: 'CHARGED OVERLOAD',
+    altFireCost: 10
   },
   {
     name: 'CYBER SHOTGUN',
@@ -543,7 +547,8 @@ const WEAPONS = [
     spread: 0.09,
     recoilZ: 0.3,
     recoilRot: 0.35,
-    color: 0xffa000
+    color: 0xffa000,
+    isEnergy: false
   },
   {
     name: 'RAIL CANNON',
@@ -555,7 +560,11 @@ const WEAPONS = [
     spread: 0.001,
     recoilZ: 0.45,
     recoilRot: 0.5,
-    color: 0xff0055
+    color: 0xff0055,
+    isEnergy: true,
+    heatPerShot: 35,
+    altFireName: 'PIERCING BEAM',
+    altFireCost: 2
   },
   {
     name: 'PULSE SMG',
@@ -567,7 +576,11 @@ const WEAPONS = [
     spread: 0.035,
     recoilZ: 0.06,
     recoilRot: 0.07,
-    color: 0x33ff00
+    color: 0x33ff00,
+    isEnergy: true,
+    heatPerShot: 8,
+    altFireName: 'BURST FIRE',
+    altFireCost: 6
   }
 ];
 
@@ -1016,6 +1029,9 @@ class Game {
         case 'Digit2': this.switchWeapon(1); break;
         case 'Digit3': this.switchWeapon(2); break;
         case 'Digit4': this.switchWeapon(3); break;
+        case 'KeyQ':
+          this.toggleAltFire();
+          break;
         case 'KeyE':
           this.performDash();
           break;
@@ -1080,6 +1096,7 @@ class Game {
     const w = WEAPONS[index];
     state.clipSize = w.clipSize;
     state.ammoClip = w.clipSize;
+    state.altFireMode = false;
 
     this.weaponMeshes.forEach((m, idx) => {
       m.visible = idx === index;
@@ -1090,6 +1107,14 @@ class Game {
       slot.classList.toggle('active', idx === index);
     });
     document.getElementById('weapon-name').textContent = w.name;
+    const fireModeEl = document.getElementById('fire-mode-indicator');
+    if (w.isEnergy) {
+      fireModeEl.textContent = state.altFireMode ? w.altFireName : 'STANDARD';
+      document.getElementById('heat-container').classList.remove('hidden');
+    } else {
+      fireModeEl.textContent = 'STANDARD';
+      document.getElementById('heat-container').classList.add('hidden');
+    }
     this.updateHUD();
   }
 
@@ -1099,7 +1124,9 @@ class Game {
     state.active = true;
     state.paused = false;
     state.health = 100;
+    state.maxHealth = 100;
     state.shield = 50;
+    state.maxShield = 50;
     state.shieldDelayTimer = 0;
     state.dashCooldown = 0;
     state.comboCount = 0;
@@ -1111,6 +1138,12 @@ class Game {
     state.ammoClip = WEAPONS[0].clipSize;
     state.ammoReserve = WEAPONS[0].maxReserve;
     state.isReloading = false;
+    state.weaponHeat = 0;
+    state.isOverheated = false;
+    state.overheatCooldown = 0;
+    state.altFireMode = false;
+    state.weaponDamageMult = 1.0;
+    state.coolingRateMult = 1.0;
     state.score = 0;
     state.kills = 0;
     state.wave = 1;
@@ -1155,6 +1188,7 @@ class Game {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-over-screen').classList.add('hidden');
     document.getElementById('pause-screen').classList.add('hidden');
+    document.getElementById('upgrade-shop-screen').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
 
     this.switchWeapon(0);
@@ -1410,20 +1444,51 @@ class Game {
     this.screenShake = 0.18;
   }
 
+  toggleAltFire() {
+    const weapon = WEAPONS[state.currentWeapon];
+    if (!weapon.isEnergy) return;
+    state.altFireMode = !state.altFireMode;
+    sounds.playWeaponSwitch();
+    const fireModeEl = document.getElementById('fire-mode-indicator');
+    fireModeEl.textContent = state.altFireMode ? weapon.altFireName : 'STANDARD';
+    this.updateHUD();
+  }
+
   shoot() {
     const now = performance.now();
     const weapon = WEAPONS[state.currentWeapon];
 
-    if (now - this.lastShotTime < weapon.fireRate) return;
+    if (state.isOverheated) {
+      const warn = document.getElementById('reload-warning');
+      warn.textContent = 'WEAPON OVERHEATED!';
+      warn.classList.remove('hidden');
+      return;
+    }
+
+    const ammoCost = state.altFireMode ? weapon.altFireCost : 1;
+    if (now - this.lastShotTime < (state.altFireMode ? weapon.fireRate * 1.5 : weapon.fireRate)) return;
     if (state.isReloading) return;
 
-    if (state.ammoClip <= 0) {
+    if (state.ammoClip < ammoCost) {
       this.reloadWeapon();
       return;
     }
 
     this.lastShotTime = now;
-    state.ammoClip--;
+    state.ammoClip -= ammoCost;
+
+    if (weapon.isEnergy) {
+      const heatAdd = (state.altFireMode ? weapon.heatPerShot * 2.2 : weapon.heatPerShot);
+      state.weaponHeat = Math.min(100, state.weaponHeat + heatAdd);
+      if (state.weaponHeat >= 100) {
+        state.isOverheated = true;
+        state.overheatCooldown = 3.0;
+        sounds.playReload();
+        const warn = document.getElementById('reload-warning');
+        warn.textContent = 'OVERHEAT! COOLING DOWN...';
+        warn.classList.remove('hidden');
+      }
+    }
     this.updateHUD();
 
     // Track dynamic accuracy stats
@@ -1455,10 +1520,15 @@ class Game {
     this.muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
 
     let shotLandedAny = false;
+    let effectivePellets = weapon.pellets;
+    if (state.altFireMode && state.currentWeapon === 3) {
+      effectivePellets = 4; // Burst SMG alt-fire
+    }
 
-    for (let p = 0; p < weapon.pellets; p++) {
-      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
-      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier;
+    for (let p = 0; p < effectivePellets; p++) {
+      const altSpreadMult = state.altFireMode ? 1.5 : 1.0;
+      const spreadX = (Math.random() - 0.5) * weapon.spread * aimMultiplier * altSpreadMult;
+      const spreadY = (Math.random() - 0.5) * weapon.spread * aimMultiplier * altSpreadMult;
       this.raycaster.setFromCamera(new THREE.Vector2(spreadX, spreadY), this.camera);
 
       const enemyIntersects = this.raycaster.intersectObject(this.enemyGroup, true);
@@ -1516,7 +1586,8 @@ class Game {
       if (hitPoint) {
     if (hitEnemy) {
       shotLandedAny = true;
-      const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0);
+      const altDmgMult = state.altFireMode ? (state.currentWeapon === 0 ? 2.5 : (state.currentWeapon === 2 ? 1.8 : 0.8)) : 1.0;
+      const mult = (isHeadshot ? 2.2 : 1.0) * (state.powerup.type === 'damage' ? 2.0 : 1.0) * (state.weaponDamageMult || 1.0) * altDmgMult;
       const dmg = Math.round(weapon.damage * mult * (0.95 + Math.random() * 0.1));
       hitEnemy.hp -= dmg;
       sounds.playHit();
@@ -1702,9 +1773,66 @@ class Game {
 
     if (state.enemiesLeft <= 0 && this.enemies.length === 0) {
       setTimeout(() => {
-        if (state.active) this.startWave(state.wave + 1);
+        if (state.active) {
+          this.openUpgradeShop();
+        }
       }, 1500);
     }
+  }
+
+  openUpgradeShop() {
+    state.paused = true;
+    this.controls.unlock();
+    document.getElementById('shop-credits').textContent = state.score;
+    document.getElementById('upgrade-shop-screen').classList.remove('hidden');
+    document.getElementById('hud').classList.add('hidden');
+
+    const setupUpgradeBtn = (btnId, costId, type, cost) => {
+      const btn = document.getElementById(btnId);
+      const costEl = document.getElementById(costId);
+      costEl.textContent = cost;
+      btn.onclick = () => {
+        if (state.score >= cost) {
+          state.score -= cost;
+          sounds.playPickup();
+          document.getElementById('shop-credits').textContent = state.score;
+          if (type === 'damage') {
+            state.weaponDamageMult = (state.weaponDamageMult || 1.0) + 0.2;
+            btn.disabled = true;
+            btn.textContent = 'ACQUIRED';
+          } else if (type === 'cooling') {
+            state.coolingRateMult = (state.coolingRateMult || 1.0) + 0.5;
+            btn.disabled = true;
+            btn.textContent = 'ACQUIRED';
+          } else if (type === 'shield') {
+            state.maxShield += 25;
+            state.shield = state.maxShield;
+            btn.disabled = true;
+            btn.textContent = 'ACQUIRED';
+          } else if (type === 'health') {
+            state.maxHealth += 50;
+            state.health = state.maxHealth;
+            btn.disabled = true;
+            btn.textContent = 'ACQUIRED';
+          }
+          this.updateHUD();
+        }
+      };
+    };
+
+    setupUpgradeBtn('buy-damage', 'cost-damage', 'damage', 500);
+    setupUpgradeBtn('buy-cooling', 'cost-cooling', 'cooling', 400);
+    setupUpgradeBtn('buy-shield', 'cost-shield', 'shield', 350);
+    setupUpgradeBtn('buy-health', 'cost-health', 'health', 300);
+
+    const closeBtn = document.getElementById('close-shop-btn');
+    closeBtn.onclick = () => {
+      document.getElementById('upgrade-shop-screen').classList.add('hidden');
+      document.getElementById('hud').classList.remove('hidden');
+      state.paused = false;
+      this.controls.lock();
+      this.startWave(state.wave + 1);
+    };
   }
 
   reloadWeapon() {
@@ -1859,8 +1987,21 @@ class Game {
     document.getElementById('score-val').textContent = state.score;
     document.getElementById('high-score-val').textContent = state.highScore;
 
+    const weapon = WEAPONS[state.currentWeapon];
+    if (weapon.isEnergy) {
+      document.getElementById('heat-container').classList.remove('hidden');
+      const heatPct = Math.min(100, state.weaponHeat || 0);
+      document.getElementById('heat-bar-fill').style.width = `${heatPct}%`;
+      document.getElementById('heat-status').textContent = `${Math.round(heatPct)}%`;
+    } else {
+      document.getElementById('heat-container').classList.add('hidden');
+    }
+
     const reloadWarn = document.getElementById('reload-warning');
-    if (state.ammoClip <= 3 && !state.isReloading && state.ammoReserve > 0) {
+    if (state.isOverheated) {
+      reloadWarn.textContent = 'OVERHEATED!';
+      reloadWarn.classList.remove('hidden');
+    } else if (state.ammoClip <= 3 && !state.isReloading && state.ammoReserve > 0) {
       reloadWarn.textContent = "PRESS [R] TO RELOAD";
       reloadWarn.classList.remove('hidden');
     } else if (!state.isReloading) {
@@ -1877,6 +2018,21 @@ class Game {
 
   updatePlayer(delta) {
     if (!state.active || state.paused) return;
+
+    // Weapon Heat Cooling & Overheat recovery logic
+    if (state.isOverheated) {
+      state.overheatCooldown -= delta;
+      state.weaponHeat = Math.max(0, state.weaponHeat - (35 * (state.coolingRateMult || 1.0)) * delta);
+      if (state.overheatCooldown <= 0 && state.weaponHeat <= 0) {
+        state.isOverheated = false;
+        document.getElementById('reload-warning').classList.add('hidden');
+      }
+      this.updateHUD();
+    } else if (state.weaponHeat > 0 && !this.isMouseDown) {
+      const coolSpeed = 25 * (state.coolingRateMult || 1.0);
+      state.weaponHeat = Math.max(0, state.weaponHeat - coolSpeed * delta);
+      this.updateHUD();
+    }
 
     // Shield Recharge logic
     if (state.shieldDelayTimer > 0) {
