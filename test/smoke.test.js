@@ -300,6 +300,96 @@ describe('Scoring, Wave Progression Math, and Multikill Combo Timer Logic', () =
   });
 });
 
+describe('Enemy Attribute Generation, Difficulty Scaling, and Raycast Hit Detection', () => {
+  it('tests enemy attribute generation (HP, speed, attack cooldowns) for scout, tank, shooter, and boss', () => {
+    const generateAttributes = (type, wave) => {
+      let hp = 50 + wave * 15;
+      let speed = 3.5 + Math.min(wave * 0.3, 4);
+      let attackCooldown = type === 'shooter' ? 1800 : 900;
+
+      if (type === 'scout') {
+        hp *= 0.6;
+        speed *= 1.4;
+      } else if (type === 'tank') {
+        hp *= 2.2;
+        speed *= 0.7;
+      } else if (type === 'boss') {
+        hp = 600 + wave * 250;
+        speed = 2.8;
+        attackCooldown = 1000;
+      }
+      return { hp, speed, attackCooldown };
+    };
+
+    const scoutAttrs = generateAttributes('scout', 1);
+    expect(scoutAttrs.hp).toBe(39); // (50 + 15) * 0.6
+    expect(scoutAttrs.speed).toBeGreaterThan(3.5);
+
+    const tankAttrs = generateAttributes('tank', 1);
+    expect(tankAttrs.hp).toBe(143); // (50 + 15) * 2.2
+    expect(tankAttrs.speed).toBeLessThan(3.5);
+
+    const bossAttrs = generateAttributes('boss', 5);
+    expect(bossAttrs.hp).toBe(1850); // 600 + 5 * 250
+    expect(bossAttrs.attackCooldown).toBe(1000);
+  });
+
+  it('tests difficulty scaling calculation based on player performance metrics', () => {
+    const calcDifficulty = (shotsFired, shotsHit, totalSpeed, speedSamples) => {
+      const accuracy = shotsFired > 5 ? (shotsHit / shotsFired) : 0.5;
+      const avgSpeed = speedSamples > 0 ? (totalSpeed / speedSamples) : 5.0;
+      return THREE.MathUtils.clamp(0.85 + (accuracy * 0.4) + (avgSpeed / 30), 0.8, 1.5);
+    };
+
+    // Struggling player (low accuracy, low speed)
+    const lowDiff = calcDifficulty(10, 2, 20.0, 10);
+    expect(lowDiff).toBeGreaterThanOrEqual(0.8);
+    expect(lowDiff).toBeLessThan(1.2);
+
+    // Skilled player (high accuracy, high speed)
+    const highDiff = calcDifficulty(10, 9, 150.0, 10);
+    expect(highDiff).toBeGreaterThan(1.2);
+    expect(highDiff).toBeLessThanOrEqual(1.5);
+  });
+
+  it('tests raycasting hit detection against enemy hitboxes (headshots vs body shots)', () => {
+    const scene = new THREE.Scene();
+    const enemyGroup = new THREE.Group();
+    scene.add(enemyGroup);
+
+    const group = new THREE.Group();
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 8), new THREE.MeshBasicMaterial());
+    core.name = 'body';
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial());
+    head.name = 'head';
+    head.position.set(0, 1.5, 0);
+    group.add(core, head);
+    group.position.set(0, 0, -10);
+    enemyGroup.add(group);
+
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100);
+    camera.position.set(0, 1.6, 0);
+    camera.lookAt(0, 1.6, -10);
+
+    const raycaster = new THREE.Raycaster();
+    
+    // Shoot directly at head
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const intersects = raycaster.intersectObject(enemyGroup, true);
+
+    expect(intersects.length).toBeGreaterThan(0);
+    const hitObject = intersects[0].object;
+    const isHeadshot = hitObject.name === 'head';
+    expect(isHeadshot).toBe(true);
+
+    // Verify multiplier application
+    const baseDamage = 32;
+    const multiplier = isHeadshot ? 2.2 : 1.0;
+    const finalDamage = Math.round(baseDamage * multiplier);
+    expect(finalDamage).toBe(70); // 32 * 2.2 = 70.4 -> 70
+  });
+});
+
 describe('Version Management System Tests', () => {
   it('verifies GAME_VERSION properties and string representation format', () => {
     expect(GAME_VERSION).toBeDefined();
