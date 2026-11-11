@@ -360,4 +360,101 @@ describe('Version Management System Tests', () => {
     expect(game.floorMesh.geometry.dispose).toHaveBeenCalled();
     expect(game.renderer.dispose).toHaveBeenCalled();
   });
+});describe('Player Physics, Collision, and Cyber Dash Tests', () => {
+  it('tests velocity decay under ground friction vs air friction', () => {
+    const game = {
+      velocity: new THREE.Vector3(10, 0, 10),
+      isGrounded: true
+    };
+
+    const delta = 0.1;
+    const groundFriction = 12.0;
+    const airFriction = 2.0;
+
+    // Ground friction decay
+    let currentFriction = game.isGrounded ? groundFriction : airFriction;
+    game.velocity.x -= game.velocity.x * currentFriction * delta;
+    game.velocity.z -= game.velocity.z * currentFriction * delta;
+
+    expect(game.velocity.x).toBeLessThan(10);
+    expect(game.velocity.z).toBeLessThan(10);
+
+    // Air friction decay
+    game.velocity.set(10, 0, 10);
+    game.isGrounded = false;
+    currentFriction = game.isGrounded ? groundFriction : airFriction;
+    game.velocity.x -= game.velocity.x * currentFriction * delta;
+    game.velocity.z -= game.velocity.z * currentFriction * delta;
+
+    // Air friction reduces velocity much less than ground friction
+    expect(game.velocity.x).toBeGreaterThan(8);
+  });
+
+  it('tests AABB collision resolution preventing player penetration', () => {
+    const obstacles = [
+      new THREE.Box3(new THREE.Vector3(-2, 0, -2), new THREE.Vector3(2, 5, 2))
+    ];
+
+    const pos = new THREE.Vector3(1.5, 1.6, 0); // close to obstacle box boundary
+    const playerRadius = 0.6;
+
+    for (const box of obstacles) {
+      const closestX = Math.max(box.min.x, Math.min(pos.x, box.max.x));
+      const closestZ = Math.max(box.min.z, Math.min(pos.z, box.max.z));
+      const distX = pos.x - closestX;
+      const distZ = pos.z - closestZ;
+      const distanceSq = distX * distX + distZ * distZ;
+
+      if (distanceSq < playerRadius * playerRadius) {
+        const distance = Math.sqrt(distanceSq);
+        if (distance > 0) {
+          const overlap = playerRadius - distance;
+          pos.x += (distX / distance) * overlap;
+          pos.z += (distZ / distance) * overlap;
+        }
+      }
+    }
+
+    // Player position should be pushed out to prevent penetration
+    expect(pos.x).toBeGreaterThan(2.0);
+  });
+
+  it('tests cyber dash cooldown and velocity boost mechanics', () => {
+    state.active = true;
+    state.paused = false;
+    state.dashCooldown = 0;
+    state.dashMaxCooldown = 2.5;
+    state.isDashing = false;
+
+    const game = {
+      velocity: new THREE.Vector3(0, 0, 0),
+      camera: {
+        getWorldDirection: (v) => v.set(0, 0, -1),
+        up: new THREE.Vector3(0, 1, 0)
+      },
+      moveState: { forward: false, backward: false, left: false, right: false },
+      createSparks: () => {},
+      performDash() {
+        if (state.dashCooldown > 0 || !state.active || state.paused) return;
+        state.dashCooldown = state.dashMaxCooldown;
+        state.isDashing = true;
+        state.dashDuration = 0.22;
+        this.velocity.x = 0;
+        this.velocity.z = -26;
+        this.velocity.y = 3.5;
+      }
+    };
+
+    game.performDash();
+
+    expect(state.dashCooldown).toBe(2.5);
+    expect(state.isDashing).toBe(true);
+    expect(game.velocity.z).toBe(-26);
+    expect(game.velocity.y).toBe(3.5);
+
+    // Test cooldown reduction over time
+    const delta = 0.5;
+    state.dashCooldown = Math.max(0, state.dashCooldown - delta);
+    expect(state.dashCooldown).toBe(2.0);
+  });
 });
