@@ -108,5 +108,3 @@ Building upon the robust foundation of **CYBER STRIKE 3D** (v1.2.0), the improve
 - **Memory Leak Diagnostics**:
   - *Issue*: Extended survival sessions (>30 waves) show gradual memory creep due to disposed material/geometry caching in Three.js renderer.
   - *Fix*: Implement strict cleanup hooks and explicit `dispose()` routines for all procedural geometries and texture atlases upon wave resets or level unloads.
->>>>
->>>>
