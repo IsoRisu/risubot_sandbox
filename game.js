@@ -1011,7 +1011,7 @@ class Game {
   }
 
   buildEnvironment() {
-    // Floor Grid Texture
+    // Floor Grid Texture with explicit texture and material tracking for disposal
     const floorSize = 100;
     const canvas = document.createElement('canvas');
     canvas.width = 512;
@@ -1030,24 +1030,33 @@ class Game {
       ctx.moveTo(0, i); ctx.lineTo(512, i);
       ctx.stroke();
     }
-    const floorTexture = new THREE.CanvasTexture(canvas);
-    floorTexture.wrapS = THREE.RepeatWrapping;
-    floorTexture.wrapT = THREE.RepeatWrapping;
-    floorTexture.repeat.set(25, 25);
+    if (this.floorTexture) this.floorTexture.dispose();
+    this.floorTexture = new THREE.CanvasTexture(canvas);
+    this.floorTexture.wrapS = THREE.RepeatWrapping;
+    this.floorTexture.wrapT = THREE.RepeatWrapping;
+    this.floorTexture.repeat.set(25, 25);
 
-    const floorMat = new THREE.MeshStandardMaterial({
-      map: floorTexture,
+    if (this.floorMaterial) {
+      if (this.floorMaterial.map) this.floorMaterial.map.dispose();
+      this.floorMaterial.dispose();
+    }
+    this.floorMaterial = new THREE.MeshStandardMaterial({
+      map: this.floorTexture,
       roughness: 0.25,
       metalness: 0.85,
       emissive: 0x001133,
       emissiveIntensity: 0.2
     });
 
+    if (this.floorMesh) {
+      this.scene.remove(this.floorMesh);
+      if (this.floorMesh.geometry) this.floorMesh.geometry.dispose();
+    }
     const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize);
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    this.scene.add(floor);
+    this.floorMesh = new THREE.Mesh(floorGeo, this.floorMaterial);
+    this.floorMesh.rotation.x = -Math.PI / 2;
+    this.floorMesh.receiveShadow = true;
+    this.scene.add(this.floorMesh);
 
     // Outer Perimeter Walls
     const wallMat = new THREE.MeshStandardMaterial({
@@ -1467,56 +1476,129 @@ class Game {
       this.applyWaveLightingShift(1);
     }
 
-    // Reset bullet decals pool
-    if (this.bulletDecalPool) {
-      this.bulletDecalPool.forEach(d => {
-        this.scene.remove(d.mesh);
-        if (d.mesh.geometry) d.mesh.geometry.dispose();
-        if (d.mesh.material) d.mesh.material.dispose();
-      });
-      this.bulletDecalPool = [];
+    // Strict cleanup & disposal routine for all cached procedural geometries, materials, and textures
+    this.disposeAllResources();
+
+    // Reset environmental lighting shifts
+    if (this.applyWaveLightingShift) {
+      this.applyWaveLightingShift(1);
     }
 
     if (this.hazardZones) {
       this.hazardZones.forEach(hz => {
         this.scene.remove(hz.group);
-        if (hz.mesh.geometry) hz.mesh.geometry.dispose();
-        if (hz.mesh.material) hz.mesh.material.dispose();
+        if (hz.mesh && hz.mesh.geometry) hz.mesh.geometry.dispose();
+        if (hz.mesh && hz.mesh.material) {
+          if (Array.isArray(hz.mesh.material)) hz.mesh.material.forEach(m => m.dispose());
+          else hz.mesh.material.dispose();
+        }
       });
     }
     this.hazardZones = [];
     this.buildHazardZones();
 
-    this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
+    this.enemies.forEach(e => {
+      this.enemyGroup.remove(e.mesh);
+      e.mesh.traverse(child => {
+        if (child.isMesh) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach(m => {
+              if (m.map) m.map.dispose();
+              m.dispose();
+            });
+            else {
+              if (child.material.map) child.material.map.dispose();
+              child.material.dispose();
+            }
+          }
+        }
+      });
+    });
     this.enemies = [];
     if (this.octree) {
       this.octree.clear();
     }
-    this.pickups.forEach(p => this.scene.remove(p.mesh));
+    this.pickups.forEach(p => {
+      this.scene.remove(p.mesh);
+      if (p.mesh.geometry) p.mesh.geometry.dispose();
+      if (p.mesh.material) {
+        if (p.mesh.material.map) p.mesh.material.map.dispose();
+        p.mesh.material.dispose();
+      }
+    });
     this.pickups = [];
-    this.particles.forEach(p => this.scene.remove(p.mesh));
+
+    this.particles.forEach(p => {
+      this.scene.remove(p.mesh);
+      if (p.mesh.geometry) p.mesh.geometry.dispose();
+      if (p.mesh.material) p.mesh.material.dispose();
+    });
     this.particles = [];
+
+    this.particlePool.forEach(p => {
+      if (p.mesh) {
+        this.scene.remove(p.mesh);
+        if (p.mesh.geometry) p.mesh.geometry.dispose();
+        if (p.mesh.material) p.mesh.material.dispose();
+      }
+    });
+    this.particlePool = [];
+
     this.projectiles.forEach(pr => {
       this.scene.remove(pr.mesh);
       if (pr.mesh.geometry) pr.mesh.geometry.dispose();
+      if (pr.mesh.material) pr.mesh.material.dispose();
     });
     this.projectiles = [];
+
     this.tracerPool.forEach(t => {
       this.scene.remove(t);
       if (t.geometry) t.geometry.dispose();
       if (t.material) t.material.dispose();
     });
     this.tracerPool = [];
+
     this.projectilePool.forEach(pr => {
       this.scene.remove(pr.mesh);
       if (pr.mesh.geometry) pr.mesh.geometry.dispose();
+      if (pr.mesh.material) pr.mesh.material.dispose();
     });
     this.projectilePool = [];
+
     this.debrisPool.forEach(d => {
       this.scene.remove(d);
       if (d.geometry) d.geometry.dispose();
+      if (d.material) d.material.dispose();
     });
     this.debrisPool = [];
+
+    if (this.activeDebris) {
+      this.activeDebris.forEach(d => {
+        this.scene.remove(d.mesh);
+        if (d.mesh.geometry) d.mesh.geometry.dispose();
+        if (d.mesh.material) d.mesh.material.dispose();
+      });
+      this.activeDebris = [];
+    }
+
+    if (this.bulletDecalPool) {
+      this.bulletDecalPool.forEach(d => {
+        this.scene.remove(d);
+        if (d.geometry) d.geometry.dispose();
+        if (d.material) d.material.dispose();
+      });
+      this.bulletDecalPool = [];
+    }
+
+    if (this.activeDecals) {
+      this.activeDecals.forEach(d => {
+        this.scene.remove(d.mesh);
+        if (d.mesh.geometry) d.mesh.geometry.dispose();
+        if (d.mesh.material) d.mesh.material.dispose();
+      });
+      this.activeDecals = [];
+    }
     document.getElementById('boss-bar-container').classList.add('hidden');
     document.getElementById('powerup-banner').classList.add('hidden');
     document.getElementById('combo-banner').classList.add('hidden');
@@ -3182,6 +3264,40 @@ class Game {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  // Explicit dispose helper method to clear shared geometries, materials, and textures
+  disposeAllResources() {
+    if (this.sharedGeos) {
+      Object.values(this.sharedGeos).forEach(geo => {
+        if (geo && typeof geo.dispose === 'function') geo.dispose();
+      });
+    }
+    if (this.sharedMaterials) {
+      Object.values(this.sharedMaterials).forEach(mat => {
+        if (mat) {
+          if (mat.map) mat.map.dispose();
+          if (typeof mat.dispose === 'function') mat.dispose();
+        }
+      });
+    }
+    if (this.floorTexture) {
+      this.floorTexture.dispose();
+      this.floorTexture = null;
+    }
+    if (this.floorMaterial) {
+      if (this.floorMaterial.map) this.floorMaterial.map.dispose();
+      this.floorMaterial.dispose();
+      this.floorMaterial = null;
+    }
+    if (this.floorMesh) {
+      this.scene.remove(this.floorMesh);
+      if (this.floorMesh.geometry) this.floorMesh.geometry.dispose();
+      this.floorMesh = null;
+    }
+    if (this.renderer && typeof this.renderer.dispose === 'function') {
+      this.renderer.dispose();
+    }
   }
 
   spawnBulletDecal(pos, normal) {

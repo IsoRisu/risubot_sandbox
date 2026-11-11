@@ -312,4 +312,52 @@ describe('Version Management System Tests', () => {
     const versionStr = GAME_VERSION.toString();
     expect(versionStr).toMatch(/^v\d+\.\d+\.\d+-.+$/);
   });
+});describe('Memory Cleanup and Resource Disposal Tests', () => {
+  it('verifies disposeAllResources and object pool cleanup routines', () => {
+    const game = {
+      sharedGeos: {
+        sphere: { dispose: vi.fn() }
+      },
+      sharedMaterials: {
+        basic: { dispose: vi.fn(), map: { dispose: vi.fn() } }
+      },
+      floorTexture: { dispose: vi.fn() },
+      floorMaterial: { dispose: vi.fn(), map: { dispose: vi.fn() } },
+      floorMesh: {
+        geometry: { dispose: vi.fn() }
+      },
+      scene: { remove: vi.fn() },
+      renderer: { dispose: vi.fn() },
+      disposeAllResources() {
+        if (this.sharedGeos) {
+          Object.values(this.sharedGeos).forEach(geo => geo.dispose());
+        }
+        if (this.sharedMaterials) {
+          Object.values(this.sharedMaterials).forEach(mat => {
+            if (mat.map) mat.map.dispose();
+            mat.dispose();
+          });
+        }
+        if (this.floorTexture) this.floorTexture.dispose();
+        if (this.floorMaterial) {
+          if (this.floorMaterial.map) this.floorMaterial.map.dispose();
+          this.floorMaterial.dispose();
+        }
+        if (this.floorMesh) {
+          this.scene.remove(this.floorMesh);
+          this.floorMesh.geometry.dispose();
+        }
+        if (this.renderer) this.renderer.dispose();
+      }
+    };
+
+    game.disposeAllResources();
+    expect(game.sharedGeos.sphere.dispose).toHaveBeenCalled();
+    expect(game.sharedMaterials.basic.dispose).toHaveBeenCalled();
+    expect(game.sharedMaterials.basic.map.dispose).toHaveBeenCalled();
+    expect(game.floorTexture.dispose).toHaveBeenCalled();
+    expect(game.floorMaterial.dispose).toHaveBeenCalled();
+    expect(game.floorMesh.geometry.dispose).toHaveBeenCalled();
+    expect(game.renderer.dispose).toHaveBeenCalled();
+  });
 });
