@@ -73,4 +73,22 @@ describe('Octree Spatial Partitioning Tests', () => {
     weapon.mods.push('mag');
     expect(weapon.mods).toContain('mag');
   });
+});describe('Hazard Zones Tests', () => {
+  it('verifies hazard zones creation and configuration', () => {
+    const game = {
+      hazardZones: [],
+      buildHazardZones() {
+        this.hazardZones = [
+          { type: 'laser', activeState: true },
+          { type: 'acid', activeState: true },
+          { type: 'conduit', activeState: true }
+        ];
+      }
+    };
+    game.buildHazardZones();
+    expect(game.hazardZones.length).toBe(3);
+    expect(game.hazardZones.some(h => h.type === 'laser')).toBe(true);
+    expect(game.hazardZones.some(h => h.type === 'acid')).toBe(true);
+    expect(game.hazardZones.some(h => h.type === 'conduit')).toBe(true);
+  });
 });

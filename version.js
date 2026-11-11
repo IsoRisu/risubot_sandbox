@@ -5,9 +5,9 @@
 
 const GAME_VERSION = {
   major: 1,
-  minor: 3,
+  minor: 4,
   patch: 0,
-  tag: 'UTILITIES_AND_MODS',
+  tag: 'HAZARD_ZONES',
   toString() {
     return `v${this.major}.${this.minor}.${this.patch}-${this.tag}`;
   }

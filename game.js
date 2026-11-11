@@ -972,6 +972,78 @@ class Game {
         });
       }
     });
+
+    this.buildHazardZones();
+  }
+
+  buildHazardZones() {
+    this.hazardZones = [];
+    const hazardConfigs = [
+      { type: 'laser', pos: [-22, 0, -10], size: [0.2, 5, 6], pulseRate: 1.5 },
+      { type: 'laser', pos: [22, 0, 10], size: [0.2, 5, 6], pulseRate: 2.0 },
+      { type: 'acid', pos: [0, 0.05, -28], size: [8, 0.1, 8] },
+      { type: 'acid', pos: [-30, 0.05, 25], size: [7, 0.1, 7] },
+      { type: 'conduit', pos: [12, 0.1, -25], size: [5, 0.2, 2], pulseRate: 1.0 },
+      { type: 'conduit', pos: [-12, 0.1, 25], size: [5, 0.2, 2], pulseRate: 1.2 }
+    ];
+
+    hazardConfigs.forEach(cfg => {
+      const group = new THREE.Group();
+      group.position.set(...cfg.pos);
+
+      let mesh, box;
+      if (cfg.type === 'laser') {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, transparent: true, opacity: 0.8 });
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(...cfg.size), mat);
+        mesh.position.y = cfg.size[1] / 2;
+        group.add(mesh);
+
+        // Emit glowing particles or supports
+        const postMat = new THREE.MeshStandardMaterial({ color: 0x222233, metalness: 0.8 });
+        const post1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, cfg.size[1]), postMat);
+        post1.position.set(0, cfg.size[1]/2, -cfg.size[2]/2);
+        const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, cfg.size[1]), postMat);
+        post2.position.set(0, cfg.size[1]/2, cfg.size[2]/2);
+        group.add(post1, post2);
+
+        box = new THREE.Box3().setFromObject(mesh);
+      } else if (cfg.type === 'acid') {
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0x00ff88,
+          emissive: 0x00ff88,
+          emissiveIntensity: 0.6,
+          roughness: 0.1,
+          metalness: 0.2,
+          transparent: true,
+          opacity: 0.85
+        });
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(...cfg.size), mat);
+        group.add(mesh);
+        box = new THREE.Box3().setFromObject(mesh);
+      } else if (cfg.type === 'conduit') {
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0xffaa00,
+          emissive: 0xffaa00,
+          emissiveIntensity: 0.9,
+          roughness: 0.2,
+          metalness: 0.8
+        });
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(...cfg.size), mat);
+        group.add(mesh);
+        box = new THREE.Box3().setFromObject(mesh);
+      }
+
+      this.scene.add(group);
+      this.hazardZones.push({
+        group: group,
+        mesh: mesh,
+        box: box,
+        type: cfg.type,
+        pulseRate: cfg.pulseRate || 1.0,
+        timer: Math.random() * Math.PI * 2,
+        activeState: true
+      });
+    });
   }
 
   buildWeapon() {
@@ -1240,6 +1312,16 @@ class Game {
       });
       this.bulletDecalPool = [];
     }
+
+    if (this.hazardZones) {
+      this.hazardZones.forEach(hz => {
+        this.scene.remove(hz.group);
+        if (hz.mesh.geometry) hz.mesh.geometry.dispose();
+        if (hz.mesh.material) hz.mesh.material.dispose();
+      });
+    }
+    this.hazardZones = [];
+    this.buildHazardZones();
 
     this.enemies.forEach(e => this.enemyGroup.remove(e.mesh));
     this.enemies = [];
@@ -2332,6 +2414,56 @@ class Game {
     }
   }
 
+  updateHazardZones(delta) {
+    if (!this.hazardZones) return;
+    const playerPos = this.camera.position;
+
+    this.hazardZones.forEach(hz => {
+      hz.timer += delta * hz.pulseRate * 3.0;
+
+      if (hz.type === 'laser') {
+        // Pulsing laser visibility & active state
+        const sineVal = Math.sin(hz.timer);
+        hz.activeState = sineVal > -0.2;
+        hz.mesh.visible = hz.activeState;
+        hz.mesh.material.opacity = hz.activeState ? (0.5 + 0.3 * Math.abs(sineVal)) : 0.1;
+      } else if (hz.type === 'conduit') {
+        // Electrical conduit sparking / pulsing burst damage intervals
+        const sineVal = Math.sin(hz.timer * 2);
+        hz.activeState = sineVal > 0.6;
+        hz.mesh.material.emissiveIntensity = hz.activeState ? 2.5 : 0.4;
+      } else if (hz.type === 'acid') {
+        // Bubbling acid oscillation
+        hz.mesh.position.y = (Math.sin(hz.timer) * 0.02);
+        hz.activeState = true;
+      }
+
+      // Check player collision with hazard zone
+      if (hz.activeState && hz.box.containsPoint(playerPos)) {
+        let dmg = 10;
+        if (hz.type === 'laser') dmg = 22;
+        else if (hz.type === 'acid') dmg = 12;
+        else if (hz.type === 'conduit') dmg = 18;
+        this.takeDamage(dmg * delta * 15);
+        this.createSparks(playerPos, hz.type === 'laser' ? 0xff0055 : (hz.type === 'acid' ? 0x00ff88 : 0xffaa00));
+      }
+
+      // Check enemy collision with hazard zone
+      this.enemies.forEach(en => {
+        if (hz.activeState && hz.box.containsPoint(en.mesh.position)) {
+          let enDmg = 15;
+          if (hz.type === 'laser') enDmg = 35;
+          else if (hz.type === 'conduit') enDmg = 25;
+          en.hp -= enDmg * delta * 20;
+          this.createSparks(en.mesh.position, 0x00f0ff);
+          if (en.hp <= 0) {
+            this.destroyEnemy(en);
+          }
+        }
+      });
+    });
+  }
+
   updateEnemies(delta) {
     const playerPos = this.camera.position;
     const now = performance.now();
@@ -2995,6 +3127,7 @@ class Game {
 
     if (state.active && !state.paused) {
       this.updatePlayer(delta);
+      this.updateHazardZones(delta);
       this.updateEnemies(delta);
       this.updatePickups();
       this.updateParticles(delta);
