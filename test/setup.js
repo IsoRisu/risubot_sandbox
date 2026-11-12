@@ -55,6 +55,15 @@ global.window = global.window || {};
 global.window.AudioContext = MockAudioContext;
 global.window.webkitAudioContext = MockAudioContext;
 
+// Mock / stub Three.js globals for test environment
+import * as THREE from 'three';
+global.window.THREE = THREE;
+global.THREE = THREE;
+
+// Import version and game engine to populate global variables (state, WEAPONS, CONSUMABLES, Octree, SoundSystem, etc.)
+import '../version.js';
+import '../game.js';
+
 // HTMLCanvasElement getContext mock
 if (typeof HTMLCanvasElement !== 'undefined') {
   HTMLCanvasElement.prototype.getContext = function(type) {
