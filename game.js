@@ -3,6 +3,7 @@
  * Engine: Three.js + Web Audio API Synthesis
  */
 
+// CYBER STRIKE 3D - Expanded Gameplay Engine & Advanced Sound/Visual Enhancements
 // Global audio synthesizer using Web Audio API
 class SoundSystem {
   constructor() {
