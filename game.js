@@ -852,49 +852,75 @@ class Game {
       // Check if touch device or mobile browser to display virtual joysticks
       const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
       if (isTouchDevice) {
-        document.getElementById('touch-controls-overlay').classList.remove('hidden');
-        document.getElementById('touch-controls-overlay').classList.add('active');
+        const touchOverlay = document.getElementById('touch-controls-overlay');
+        if (touchOverlay) {
+          touchOverlay.classList.remove('hidden');
+          touchOverlay.classList.add('active');
+        }
       } else {
         try {
-          this.controls.lock();
+          if (this.controls && typeof this.controls.lock === 'function') {
+            this.controls.lock();
+          }
         } catch (e) {
           // Fallback if pointer lock fails or requires user gesture confirmation
+          const pauseScreen = document.getElementById('pause-screen');
+          const hud = document.getElementById('hud');
+          if (pauseScreen) pauseScreen.classList.add('hidden');
+          if (hud) hud.classList.remove('hidden');
+          state.paused = false;
         }
       }
     };
 
-    startBtn.addEventListener('click', handleGameStart);
-    restartBtn.addEventListener('click', handleGameStart);
+    if (startBtn) {
+      startBtn.addEventListener('click', handleGameStart);
+    }
+    if (restartBtn) {
+      restartBtn.addEventListener('click', handleGameStart);
+    }
 
-    this.controls.addEventListener('lock', () => {
-      if (state.active) {
-        document.getElementById('pause-screen').classList.add('hidden');
-        document.getElementById('hud').classList.remove('hidden');
-        state.paused = false;
-      }
-    });
-
-    this.controls.addEventListener('unlock', () => {
-      this.isMouseDown = false;
-      if (state.active && state.health > 0) {
-        document.getElementById('pause-screen').classList.remove('hidden');
-        document.getElementById('hud').classList.add('hidden');
-        state.paused = true;
-      }
-    });
-
-    document.getElementById('pause-screen').addEventListener('click', () => {
-      if (state.active && state.paused) {
-        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
-        if (!isTouchDevice) {
-          this.controls.lock();
-        } else {
-          document.getElementById('pause-screen').classList.add('hidden');
-          document.getElementById('hud').classList.remove('hidden');
+    if (this.controls && typeof this.controls.addEventListener === 'function') {
+      this.controls.addEventListener('lock', () => {
+        if (state.active) {
+          const pauseScreen = document.getElementById('pause-screen');
+          const hud = document.getElementById('hud');
+          if (pauseScreen) pauseScreen.classList.add('hidden');
+          if (hud) hud.classList.remove('hidden');
           state.paused = false;
         }
-      }
-    });
+      });
+
+      this.controls.addEventListener('unlock', () => {
+        this.isMouseDown = false;
+        if (state.active && state.health > 0) {
+          const pauseScreen = document.getElementById('pause-screen');
+          const hud = document.getElementById('hud');
+          if (pauseScreen) pauseScreen.classList.remove('hidden');
+          if (hud) hud.classList.add('hidden');
+          state.paused = true;
+        }
+      });
+    }
+
+    const pauseScreenEl = document.getElementById('pause-screen');
+    if (pauseScreenEl) {
+      pauseScreenEl.addEventListener('click', () => {
+        if (state.active && state.paused) {
+          const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 1024;
+          if (!isTouchDevice && this.controls && typeof this.controls.lock === 'function') {
+            try {
+              this.controls.lock();
+            } catch (err) {}
+          } else {
+            if (pauseScreenEl) pauseScreenEl.classList.add('hidden');
+            const hud = document.getElementById('hud');
+            if (hud) hud.classList.remove('hidden');
+            state.paused = false;
+          }
+        }
+      });
+    }
 
     this.initTouchJoysticks();
   }
