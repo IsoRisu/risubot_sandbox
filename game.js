@@ -851,6 +851,12 @@ class Game {
       if (isTouchDevice) {
         document.getElementById('touch-controls-overlay').classList.remove('hidden');
         document.getElementById('touch-controls-overlay').classList.add('active');
+      } else {
+        try {
+          this.controls.lock();
+        } catch (e) {
+          // Fallback if pointer lock fails or requires user gesture confirmation
+        }
       }
     };
 
