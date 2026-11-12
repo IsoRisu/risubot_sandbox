@@ -92,4 +92,6 @@ const localStorageMock = (() => {
     removeItem(key) { delete store[key]; }
   };
 })();
-global.localStorage = localStorageMock;
+global.localStorage = global.localStorage || localStorageMock;
+global.window = global.window || {};
+global.window.localStorage = global.window.localStorage || localStorageMock;
