@@ -4,6 +4,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../version.js';
 import '../game.js';
 
+// Ensure global variables are exposed on globalThis for vitest environments
+if (typeof GAME_VERSION !== 'undefined') globalThis.GAME_VERSION = GAME_VERSION;
+if (typeof state !== 'undefined') globalThis.state = state;
+if (typeof WEAPONS !== 'undefined') globalThis.WEAPONS = WEAPONS;
+if (typeof CONSUMABLES !== 'undefined') globalThis.CONSUMABLES = CONSUMABLES;
+if (typeof Octree !== 'undefined') globalThis.Octree = Octree;
+if (typeof SoundSystem !== 'undefined') globalThis.SoundSystem = SoundSystem;
+if (typeof THREE !== 'undefined') globalThis.THREE = THREE;
+
 describe('Cyber Strike 3D Smoke Tests & Test Runner Setup', () => {
   beforeEach(() => {
     document.body.innerHTML = `

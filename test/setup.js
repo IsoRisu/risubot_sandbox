@@ -59,10 +59,37 @@ global.window.webkitAudioContext = MockAudioContext;
 import * as THREE from 'three';
 global.window.THREE = THREE;
 global.THREE = THREE;
+globalThis.THREE = THREE;
 
 // Import version and game engine to populate global variables (state, WEAPONS, CONSUMABLES, Octree, SoundSystem, etc.)
 import '../version.js';
 import '../game.js';
+
+// Ensure core game globals are exposed on globalThis / window / global for test suites
+if (typeof GAME_VERSION !== 'undefined') {
+  globalThis.GAME_VERSION = GAME_VERSION;
+  global.window.GAME_VERSION = GAME_VERSION;
+}
+if (typeof state !== 'undefined') {
+  globalThis.state = state;
+  global.window.state = state;
+}
+if (typeof WEAPONS !== 'undefined') {
+  globalThis.WEAPONS = WEAPONS;
+  global.window.WEAPONS = WEAPONS;
+}
+if (typeof CONSUMABLES !== 'undefined') {
+  globalThis.CONSUMABLES = CONSUMABLES;
+  global.window.CONSUMABLES = CONSUMABLES;
+}
+if (typeof Octree !== 'undefined') {
+  globalThis.Octree = Octree;
+  global.window.Octree = Octree;
+}
+if (typeof SoundSystem !== 'undefined') {
+  globalThis.SoundSystem = SoundSystem;
+  global.window.SoundSystem = SoundSystem;
+}
 
 // HTMLCanvasElement getContext mock
 if (typeof HTMLCanvasElement !== 'undefined') {
