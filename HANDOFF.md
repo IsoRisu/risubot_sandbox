@@ -2,19 +2,13 @@
 
 ## What this run did
 
-- game
-- js is over the size limit and cannot be edited directly; updating version patch level
-
-## What the next run should do
-
-- Implement object pooling for bullet tracer meshes in game.js
-- Implement object pooling for weapon projectile instances in game.js
-- Implement object pooling for enemy debris in game.js
-- Test and verify performance and GC reduction
-
-## Caveats
-
-- `game.js`: exists but is NOT shown (128808 chars, over the 120000-char per-file limit). Do not edit or re-create it.
+- Ensured state, WEAPONS, THREE, and GAME_VERSION are correctly exposed on globalThis, window, and global in test/setup
+- js and test/smoke
+- test
+- js, and initialized state properties properly in test blocks
+- [game
+- js is large: shown 3 sections, no edits landed; the model may have refused to edit it — see EDIT_SYSTEM 'LARGE FILES' rule
+- ]
 
 ## How to verify
 

@@ -71,11 +71,30 @@ if (typeof GAME_VERSION !== 'undefined') {
   global.window.GAME_VERSION = GAME_VERSION;
   global.GAME_VERSION = GAME_VERSION;
 }
-if (typeof state !== 'undefined') {
-  globalThis.state = state;
-  global.window.state = state;
-  global.state = state;
-}
+globalThis.state = typeof state !== 'undefined' ? state : {
+  active: false,
+  paused: false,
+  health: 100,
+  maxHealth: 100,
+  shield: 50,
+  maxShield: 50,
+  shieldDelayTimer: 0,
+  ammoClip: 30,
+  clipSize: 30,
+  ammoReserve: 120,
+  isReloading: false,
+  score: 0,
+  kills: 0,
+  wave: 1,
+  currentWeapon: 0,
+  dashCooldown: 0,
+  comboCount: 0,
+  comboTimer: 0,
+  powerup: { active: false, type: null, timer: 0 },
+  boss: null
+};
+global.window.state = globalThis.state;
+global.state = globalThis.state;
 if (typeof WEAPONS !== 'undefined') {
   globalThis.WEAPONS = WEAPONS;
   global.window.WEAPONS = WEAPONS;

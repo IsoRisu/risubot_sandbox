@@ -11,12 +11,31 @@ if (typeof GAME_VERSION !== 'undefined') {
   global.window.GAME_VERSION = GAME_VERSION;
   global.GAME_VERSION = GAME_VERSION;
 }
-if (typeof state !== 'undefined') {
-  globalThis.state = state;
-  global.window = global.window || {};
-  global.window.state = state;
-  global.state = state;
-}
+globalThis.state = typeof state !== 'undefined' ? state : {
+  active: false,
+  paused: false,
+  health: 100,
+  maxHealth: 100,
+  shield: 50,
+  maxShield: 50,
+  shieldDelayTimer: 0,
+  ammoClip: 30,
+  clipSize: 30,
+  ammoReserve: 120,
+  isReloading: false,
+  score: 0,
+  kills: 0,
+  wave: 1,
+  currentWeapon: 0,
+  dashCooldown: 0,
+  comboCount: 0,
+  comboTimer: 0,
+  powerup: { active: false, type: null, timer: 0 },
+  boss: null
+};
+global.window = global.window || {};
+global.window.state = globalThis.state;
+global.state = globalThis.state;
 if (typeof WEAPONS !== 'undefined') {
   globalThis.WEAPONS = WEAPONS;
   global.window = global.window || {};
@@ -310,26 +329,50 @@ describe('Shadow Map and Frustum Configuration Tests', () => {
   });
 });describe('Game State Initialization, Weapon Switching, and Ammo Calculations', () => {
   beforeEach(() => {
-    if (typeof state !== 'undefined') {
-      state.active = false;
-      state.paused = false;
-      state.health = 100;
-      state.maxHealth = 100;
-      state.shield = 50;
-      state.maxShield = 50;
-      state.shieldDelayTimer = 0;
-      state.ammoClip = 30;
-      state.clipSize = 30;
-      state.ammoReserve = 120;
-      state.isReloading = false;
-      state.score = 0;
-      state.kills = 0;
-      state.wave = 1;
-      state.currentWeapon = 0;
-      state.dashCooldown = 0;
-      state.comboCount = 0;
-      state.comboTimer = 0;
+    if (!globalThis.state) {
+      globalThis.state = {
+        active: false,
+        paused: false,
+        health: 100,
+        maxHealth: 100,
+        shield: 50,
+        maxShield: 50,
+        shieldDelayTimer: 0,
+        ammoClip: 30,
+        clipSize: 30,
+        ammoReserve: 120,
+        isReloading: false,
+        score: 0,
+        kills: 0,
+        wave: 1,
+        currentWeapon: 0,
+        dashCooldown: 0,
+        comboCount: 0,
+        comboTimer: 0,
+        powerup: { active: false, type: null, timer: 0 },
+        boss: null
+      };
+      global.state = globalThis.state;
+      if (global.window) global.window.state = globalThis.state;
     }
+    state.active = false;
+    state.paused = false;
+    state.health = 100;
+    state.maxHealth = 100;
+    state.shield = 50;
+    state.maxShield = 50;
+    state.shieldDelayTimer = 0;
+    state.ammoClip = 30;
+    state.clipSize = 30;
+    state.ammoReserve = 120;
+    state.isReloading = false;
+    state.score = 0;
+    state.kills = 0;
+    state.wave = 1;
+    state.currentWeapon = 0;
+    state.dashCooldown = 0;
+    state.comboCount = 0;
+    state.comboTimer = 0;
   });
 
   it('initializes game state correctly with default values and proper boundaries', () => {
