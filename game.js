@@ -1617,16 +1617,14 @@ class Game {
     this.particlePool.forEach(p => {
       if (p.mesh) {
         this.scene.remove(p.mesh);
-        if (p.mesh.geometry) p.mesh.geometry.dispose();
-        if (p.mesh.material) p.mesh.material.dispose();
+        if (p.mesh.geometry && p.mesh.geometry !== this.sharedGeos.sphereSmall && p.mesh.geometry !== this.sharedGeos.boxSmall && p.mesh.geometry !== this.sharedGeos.sphereMedium) p.mesh.geometry.dispose();
       }
     });
     this.particlePool = [];
 
     this.projectiles.forEach(pr => {
       this.scene.remove(pr.mesh);
-      if (pr.mesh.geometry) pr.mesh.geometry.dispose();
-      if (pr.mesh.material) pr.mesh.material.dispose();
+      if (pr.mesh.geometry && pr.mesh.geometry !== this.sharedGeos.sphereMedium) pr.mesh.geometry.dispose();
     });
     this.projectiles = [];
 
@@ -1638,16 +1636,18 @@ class Game {
     this.tracerPool = [];
 
     this.projectilePool.forEach(pr => {
-      this.scene.remove(pr.mesh);
-      if (pr.mesh.geometry) pr.mesh.geometry.dispose();
-      if (pr.mesh.material) pr.mesh.material.dispose();
+      if (pr.mesh) {
+        this.scene.remove(pr.mesh);
+        if (pr.mesh.geometry && pr.mesh.geometry !== this.sharedGeos.sphereMedium) pr.mesh.geometry.dispose();
+      }
     });
     this.projectilePool = [];
 
     this.debrisPool.forEach(d => {
-      this.scene.remove(d);
-      if (d.geometry) d.geometry.dispose();
-      if (d.material) d.material.dispose();
+      if (d) {
+        this.scene.remove(d);
+        if (d.geometry && d.geometry !== this.sharedGeos.boxSmall) d.geometry.dispose();
+      }
     });
     this.debrisPool = [];
 
@@ -2431,9 +2431,14 @@ class Game {
     let pObj;
     if (this.particlePool.length > 0) {
       pObj = this.particlePool.pop();
-      pObj.mesh.geometry = geo;
-      pObj.mesh.material = mat;
+      if (pObj.mesh.geometry !== geo) {
+        pObj.mesh.geometry = geo;
+      }
+      if (pObj.mesh.material !== mat) {
+        pObj.mesh.material = mat;
+      }
       pObj.mesh.position.copy(pos);
+      pObj.mesh.scale.set(1, 1, 1);
       pObj.mesh.visible = true;
       pObj.vel.copy(vel);
       pObj.life = life;
@@ -3214,17 +3219,19 @@ class Game {
   }
 
   spawnDebris(pos) {
-    const mat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    const mat = this.sharedMaterials.sparkCyan || new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    const geo = this.sharedGeos.boxSmall || new THREE.BoxGeometry(0.15, 0.15, 0.15);
     for (let i = 0; i < 4; i++) {
       let mesh;
       if (this.debrisPool.length > 0) {
         mesh = this.debrisPool.pop();
-        mesh.material = mat;
+        if (mesh.material !== mat) mesh.material = mat;
+        if (mesh.geometry !== geo) mesh.geometry = geo;
         mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5));
+        mesh.rotation.set(0, 0, 0);
         mesh.scale.set(1, 1, 1);
         mesh.visible = true;
       } else {
-        const geo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
         mesh = new THREE.Mesh(geo, mat);
         mesh.position.copy(pos);
         this.scene.add(mesh);
