@@ -2,10 +2,16 @@
 
 ## What this run did
 
-- Implemented comprehensive test coverage for untested functionality, and added 3 new gameplay features (EMP/Nano Shield/Tactical Stim consumables & alternate weapon fire modes / dash shockwave) with corresponding unit and integration tests
+- WARNING: the work on `game
+- js` did NOT land: the file is large and none of the AI's edits to it were applied, so the AI's own report of finished work is not shown
+- No file was changed
 - [game
 - js is large: shown 3 sections, no edits landed; the model may have refused to edit it — see EDIT_SYSTEM 'LARGE FILES' rule
 - ]
+
+## What the next run should do
+
+- Examine test/setup.js, test/smoke.test.js, game.js, and version.js
 
 ## How to verify
 
