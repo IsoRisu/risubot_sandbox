@@ -1,13 +1,13 @@
 /**
  * CYBER STRIKE 3D - Version Management System (Semantic Versioning)
- * Version: 1.2.0
+ * Version: 1.5.0
  */
 
 const GAME_VERSION = {
   major: 1,
-  minor: 4,
+  minor: 5,
   patch: 0,
-  tag: 'HAZARD_ZONES',
+  tag: 'ULTIMATE_CYBER_EDITION',
   toString() {
     return `v${this.major}.${this.minor}.${this.patch}-${this.tag}`;
   }
