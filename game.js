@@ -1220,6 +1220,29 @@ class Game {
     });
   }
 
+  buildCombatDrone() {
+    this.droneGroup = new THREE.Group();
+    const droneCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8, metalness: 0.9 })
+    );
+    const ringGeo = new THREE.TorusGeometry(0.55, 0.04, 8, 24);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true });
+    const droneRing = new THREE.Mesh(ringGeo, ringMat);
+    droneRing.rotation.x = Math.PI / 2;
+
+    this.droneGroup.add(droneCore, droneRing);
+    this.scene.add(this.droneGroup);
+    this.combatDrone = {
+      mesh: this.droneGroup,
+      lastShot: 0,
+      fireInterval: 800,
+      range: 20
+    };
+    this.droneActive = true;
+    this.droneAngle = 0;
+  }
+
   buildWeapon() {
     this.weaponGroup = new THREE.Group();
     this.weaponMeshes = [];
@@ -1458,6 +1481,12 @@ class Game {
     CONSUMABLES.emp.count = 2;
     CONSUMABLES.shield.count = 2;
     CONSUMABLES.stim.count = 3;
+    if (!this.combatDrone) {
+      this.buildCombatDrone();
+    }
+    this.droneActive = true;
+    this.droneAngle = 0;
+    if (this.droneMesh) this.droneMesh.visible = true;
     WEAPONS.forEach(w => { w.mods = []; });
     state.clipSize = WEAPONS[0].clipSize;
     state.ammoClip = WEAPONS[0].clipSize;
@@ -1600,6 +1629,16 @@ class Game {
         if (d.mesh.material) d.mesh.material.dispose();
       });
       this.activeDecals = [];
+    }
+    if (this.combatDrone && this.combatDrone.mesh) {
+      this.scene.remove(this.combatDrone.mesh);
+      this.combatDrone.mesh.traverse(child => {
+        if (child.isMesh) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        }
+      });
+      this.combatDrone = null;
     }
     document.getElementById('boss-bar-container').classList.add('hidden');
     document.getElementById('powerup-banner').classList.add('hidden');
@@ -3429,6 +3468,43 @@ class Game {
     });
   }
 
+  updateCombatDrone(delta) {
+    if (!this.combatDrone || !this.droneActive || !state.active || state.paused) return;
+    this.droneAngle += delta * 2.0;
+    const orbitRadius = 2.5;
+    const targetX = this.camera.position.x + Math.cos(this.droneAngle) * orbitRadius;
+    const targetZ = this.camera.position.z + Math.sin(this.droneAngle) * orbitRadius;
+    const targetY = this.camera.position.y + 0.5 + Math.sin(this.droneAngle * 2) * 0.2;
+
+    this.combatDrone.mesh.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), delta * 8);
+    this.combatDrone.mesh.rotation.y += delta * 4;
+
+    // Autonomous combat drone firing support at nearest enemy
+    const now = performance.now();
+    if (now - this.combatDrone.lastShot > this.combatDrone.fireInterval && this.enemies.length > 0) {
+      let nearestEnemy = null;
+      let minDist = Infinity;
+      this.enemies.forEach(en => {
+        const d = en.mesh.position.distanceTo(this.combatDrone.mesh.position);
+        if (d < minDist) {
+          minDist = d;
+          nearestEnemy = en;
+        }
+      });
+
+      if (nearestEnemy && minDist < this.combatDrone.range) {
+        this.combatDrone.lastShot = now;
+        sounds.playLaser();
+        nearestEnemy.hp -= 25;
+        this.createSparks(nearestEnemy.mesh.position, 0x00ff88);
+        this.createTracerLine(this.combatDrone.mesh.position, nearestEnemy.mesh.position, 0x00ff88);
+        if (nearestEnemy.hp <= 0) {
+          this.destroyEnemy(nearestEnemy);
+        }
+      }
+    }
+  }
+
   animate() {
     requestAnimationFrame(() => this.animate());
 
@@ -3436,6 +3512,7 @@ class Game {
 
     if (state.active && !state.paused) {
       this.updatePlayer(delta);
+      this.updateCombatDrone(delta);
       this.updateHazardZones(delta);
       this.updateEnemies(delta);
       this.updatePickups();

@@ -2,9 +2,8 @@
 
 ## What this run did
 
-- Examined test requirements and game engine implementation, verifying all smoke tests and modules pass successfully
-- Added a new cybernetic dash shockwave ability in game.js which unleashes an EMP pulse upon landing a dash near enemies.
-- Documented next prompts for subsequent feature expansions.
+- Added a new deployable tactical combat drone companion feature in game.js that orbits the player, fires at nearby enemies, and provides tactical fire support.
+- Updated handoff documentation with next prompts for subsequent feature expansions.
 
 ## Next Prompts for Future Runs
 
