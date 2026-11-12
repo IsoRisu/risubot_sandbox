@@ -541,7 +541,10 @@ const sounds = new SoundSystem();
 const CONSUMABLES = {
   emp: { name: 'EMP Grenade', count: 2, max: 5 },
   shield: { name: 'Nano Shield', count: 2, max: 5 },
-  stim: { name: 'Tactical Stim', count: 3, max: 5 }
+  stim: { name: 'Tactical Stim', count: 3, max: 5 },
+  cloak: { name: 'Tactical Cloak', count: 2, max: 5 },
+  turret: { name: 'Wave Turret', count: 2, max: 5 },
+  cryo: { name: 'Cryo Grenade', count: 2, max: 5 }
 };
 
 const WEAPONS = [
@@ -639,7 +642,9 @@ const state = {
   comboCount: 0,
   comboTimer: 0,
   powerup: { active: false, type: null, timer: 0 },
-  boss: null
+  boss: null,
+  isCloaked: false,
+  cloakTimer: 0
 };
 
 // Main Game Engine Class
@@ -1347,6 +1352,15 @@ class Game {
         case 'KeyC':
           this.useConsumable('stim');
           break;
+        case 'KeyV':
+          this.useConsumable('cloak');
+          break;
+        case 'KeyB':
+          this.useConsumable('turret');
+          break;
+        case 'KeyN':
+          this.useConsumable('cryo');
+          break;
       }
     });
 
@@ -1425,6 +1439,25 @@ class Game {
       banner.textContent = 'TACTICAL STIM: SPEED & REGEN BOOST!';
       banner.classList.remove('hidden');
       setTimeout(() => banner.classList.add('hidden'), 2000);
+    } else if (type === 'cloak') {
+      state.isCloaked = true;
+      state.cloakTimer = 6.0;
+      const banner = document.getElementById('powerup-banner');
+      banner.textContent = 'TACTICAL CLOAK ENGAGED (STEALTH)!';
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 2000);
+    } else if (type === 'turret') {
+      this.deployTurret();
+      const banner = document.getElementById('powerup-banner');
+      banner.textContent = 'WAVE TURRET DEPLOYED!';
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 2000);
+    } else if (type === 'cryo') {
+      this.deployCryoBlast();
+      const banner = document.getElementById('powerup-banner');
+      banner.textContent = 'CRYO FREEZE GRENADE DETONATED!';
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 2000);
     }
 
     this.updateHUD();
@@ -1481,6 +1514,15 @@ class Game {
     CONSUMABLES.emp.count = 2;
     CONSUMABLES.shield.count = 2;
     CONSUMABLES.stim.count = 3;
+    CONSUMABLES.cloak.count = 2;
+    CONSUMABLES.turret.count = 2;
+    CONSUMABLES.cryo.count = 2;
+    state.isCloaked = false;
+    state.cloakTimer = 0;
+    if (this.turrets) {
+      this.turrets.forEach(t => this.scene.remove(t.mesh));
+    }
+    this.turrets = [];
     if (!this.combatDrone) {
       this.buildCombatDrone();
     }
@@ -2583,6 +2625,41 @@ class Game {
       }
     }
 
+    // Tactical Cloak Timer logic
+    if (state.isCloaked) {
+      state.cloakTimer -= delta;
+      if (state.cloakTimer <= 0) {
+        state.isCloaked = false;
+      }
+    }
+
+    // Update Turrets logic
+    if (this.turrets) {
+      const now = performance.now();
+      this.turrets.forEach(turret => {
+        turret.mesh.rotation.y += delta * 2;
+        if (now - turret.lastShot > 600 && this.enemies.length > 0) {
+          let nearest = null;
+          let minD = Infinity;
+          this.enemies.forEach(en => {
+            const d = en.mesh.position.distanceTo(turret.mesh.position);
+            if (d < minD) {
+              minD = d;
+              nearest = en;
+            }
+          });
+          if (nearest && minD < 18) {
+            turret.lastShot = now;
+            sounds.playLaser();
+            nearest.hp -= 35;
+            this.createSparks(nearest.mesh.position, 0x00f0ff);
+            this.createTracerLine(turret.mesh.position, nearest.mesh.position, 0x00f0ff);
+            if (nearest.hp <= 0) this.destroyEnemy(nearest);
+          }
+        }
+      });
+    }
+
     let baseSpeed = this.moveState.sprint ? 15.5 : 9.8;
     if (state.powerup.type === 'speed') baseSpeed *= 1.4;
 
@@ -2816,11 +2893,26 @@ class Game {
       enemy.ring.rotation.z += delta * 2;
       enemy.stateTimer -= delta;
 
+      // Handle cryo freeze slow timer if active
+      if (enemy.frozenTimer > 0) {
+        enemy.frozenTimer -= delta;
+        if (enemy.frozenTimer <= 0) {
+          enemy.speed /= 0.3; // Restore speed
+        }
+      }
+
       const ePos = enemy.mesh.position;
       const toPlayer = new THREE.Vector3().subVectors(playerPos, ePos);
       toPlayer.y = 0;
       const dist = toPlayer.length();
       const dir = toPlayer.clone().normalize();
+
+      // If player is cloaked, enemies wander or ignore direct targeting
+      if (state.isCloaked) {
+        const wanderDir = new THREE.Vector3(Math.sin(idx + enemy.stateTimer), 0, Math.cos(idx + enemy.stateTimer)).normalize();
+        ePos.add(wanderDir.multiplyScalar(enemy.speed * 0.4 * delta));
+        return;
+      }
 
       // Flanking vector calculation with dynamic offset based on squad index
       const sideDir = new THREE.Vector3(-dir.z, 0, dir.x);
@@ -2986,6 +3078,42 @@ class Game {
         this.projectiles.splice(i, 1);
       }
     }
+  }
+
+  deployTurret() {
+    if (!this.turrets) this.turrets = [];
+    const group = new THREE.Group();
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.9, roughness: 0.2 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 0.4, 16), baseMat);
+    base.position.y = 0.2;
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8).rotateX(Math.PI / 2), baseMat);
+    barrel.position.set(0, 0.6, -0.3);
+    group.add(base, barrel);
+
+    group.position.copy(this.camera.position);
+    group.position.y = 0;
+    this.scene.add(group);
+
+    this.turrets.push({
+      mesh: group,
+      hp: 200,
+      lastShot: 0,
+      position: group.position.clone()
+    });
+  }
+
+  deployCryoBlast() {
+    const blastPos = this.camera.position.clone();
+    this.createExplosion(blastPos);
+    this.enemies.forEach(en => {
+      if (en.mesh.position.distanceTo(blastPos) < 10.0) {
+        en.hp -= 70;
+        en.frozenTimer = 4.0;
+        en.speed *= 0.3; // Slow down enemy
+        this.createSparks(en.mesh.position, 0x00f0ff);
+        if (en.hp <= 0) this.destroyEnemy(en);
+      }
+    });
   }
 
   spawnMinionAt(pos) {

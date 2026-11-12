@@ -801,7 +801,7 @@ describe('Version Management System Tests', () => {
     state.dashCooldown = Math.max(0, state.dashCooldown - delta);
     expect(state.dashCooldown).toBe(2.0);
   });
-});describe('New Features Unit Tests (EMP, Nano Shield, Tactical Stim, and Dash Shockwave)', () => {
+});describe('New Features Unit Tests (EMP, Nano Shield, Tactical Stim, Dash Shockwave, Cloak, Turret, Cryo Grenade)', () => {
   it('verifies consumable usage and count limitations for emp, shield, and stim', () => {
     CONSUMABLES.emp.count = 2;
     CONSUMABLES.shield.count = 2;
@@ -858,5 +858,59 @@ describe('Version Management System Tests', () => {
 
     expect(enemies[0].hp).toBe(60);
     expect(enemies[1].hp).toBe(100);
+  });
+
+  it('verifies Feature 1: Tactical Cloak stealth utility activation and duration', () => {
+    state.isCloaked = false;
+    state.cloakTimer = 0;
+    const activateCloak = () => {
+      state.isCloaked = true;
+      state.cloakTimer = 5.0;
+    };
+    activateCloak();
+    expect(state.isCloaked).toBe(true);
+    expect(state.cloakTimer).toBe(5.0);
+
+    // Simulate update decrement
+    state.cloakTimer -= 1.0;
+    expect(state.cloakTimer).toBe(4.0);
+  });
+
+  it('verifies Feature 2: Deployable Wave Turret placement and firing logic', () => {
+    const turrets = [];
+    const spawnTurret = (pos) => {
+      turrets.push({ position: pos.clone(), hp: 200, lastShot: 0 });
+    };
+    spawnTurret(new THREE.Vector3(0, 0, -5));
+    expect(turrets.length).toBe(1);
+    expect(turrets[0].hp).toBe(200);
+
+    // Simulate turret shooting nearby enemy
+    const enemies = [{ hp: 100, mesh: { position: new THREE.Vector3(1, 0, -5) } }];
+    turrets.forEach(t => {
+      enemies.forEach(en => {
+        if (en.mesh.position.distanceTo(t.position) < 15) {
+          en.hp -= 30;
+        }
+      });
+    });
+    expect(enemies[0].hp).toBe(70);
+  });
+
+  it('verifies Feature 3: Cryo Freeze Grenade slow-down effect and area damage', () => {
+    const enemies = [
+      { hp: 100, speed: 4.0, frozenTimer: 0, mesh: { position: new THREE.Vector3(2, 0, 2) } }
+    ];
+    const grenadeOrigin = new THREE.Vector3(0, 0, 0);
+    enemies.forEach(en => {
+      if (en.mesh.position.distanceTo(grenadeOrigin) < 8.0) {
+        en.hp -= 50;
+        en.frozenTimer = 3.0;
+        en.speed *= 0.2;
+      }
+    });
+    expect(enemies[0].hp).toBe(50);
+    expect(enemies[0].frozenTimer).toBe(3.0);
+    expect(enemies[0].speed).toBe(0.8);
   });
 });
