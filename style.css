@@ -12,6 +12,10 @@ body, html {
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: #050811;
   color: #fff;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #game-container {
@@ -123,10 +127,11 @@ body, html {
   flex-direction: column;
   justify-content: space-between;
   padding: 20px 28px;
+  box-sizing: border-box;
 }
 @media (max-width: 768px) {
   #hud {
-    padding: 10px 14px;
+    padding: 10px 12px;
   }
 }
 
@@ -1174,6 +1179,8 @@ body {
   justify-content: space-between;
   align-items: flex-end;
   padding: 30px;
+  box-sizing: border-box;
+  opacity: 0.95;
 }
 
 #touch-controls-overlay.active {
