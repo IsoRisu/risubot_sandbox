@@ -5,13 +5,48 @@ import '../version.js';
 import '../game.js';
 
 // Ensure global variables are exposed on globalThis and global for vitest environments
-if (typeof GAME_VERSION !== 'undefined') { globalThis.GAME_VERSION = GAME_VERSION; global.GAME_VERSION = GAME_VERSION; }
-if (typeof state !== 'undefined') { globalThis.state = state; global.state = state; }
-if (typeof WEAPONS !== 'undefined') { globalThis.WEAPONS = WEAPONS; global.WEAPONS = WEAPONS; }
-if (typeof CONSUMABLES !== 'undefined') { globalThis.CONSUMABLES = CONSUMABLES; global.CONSUMABLES = CONSUMABLES; }
-if (typeof Octree !== 'undefined') { globalThis.Octree = Octree; global.Octree = Octree; }
-if (typeof SoundSystem !== 'undefined') { globalThis.SoundSystem = SoundSystem; global.SoundSystem = SoundSystem; }
-if (typeof THREE !== 'undefined') { globalThis.THREE = THREE; global.THREE = THREE; }
+if (typeof GAME_VERSION !== 'undefined') {
+  globalThis.GAME_VERSION = GAME_VERSION;
+  global.window = global.window || {};
+  global.window.GAME_VERSION = GAME_VERSION;
+  global.GAME_VERSION = GAME_VERSION;
+}
+if (typeof state !== 'undefined') {
+  globalThis.state = state;
+  global.window = global.window || {};
+  global.window.state = state;
+  global.state = state;
+}
+if (typeof WEAPONS !== 'undefined') {
+  globalThis.WEAPONS = WEAPONS;
+  global.window = global.window || {};
+  global.window.WEAPONS = WEAPONS;
+  global.WEAPONS = WEAPONS;
+}
+if (typeof CONSUMABLES !== 'undefined') {
+  globalThis.CONSUMABLES = CONSUMABLES;
+  global.window = global.window || {};
+  global.window.CONSUMABLES = CONSUMABLES;
+  global.CONSUMABLES = CONSUMABLES;
+}
+if (typeof Octree !== 'undefined') {
+  globalThis.Octree = Octree;
+  global.window = global.window || {};
+  global.window.Octree = Octree;
+  global.Octree = Octree;
+}
+if (typeof SoundSystem !== 'undefined') {
+  globalThis.SoundSystem = SoundSystem;
+  global.window = global.window || {};
+  global.window.SoundSystem = SoundSystem;
+  global.SoundSystem = SoundSystem;
+}
+if (typeof THREE !== 'undefined') {
+  globalThis.THREE = THREE;
+  global.window = global.window || {};
+  global.window.THREE = THREE;
+  global.THREE = THREE;
+}
 
 describe('Cyber Strike 3D Smoke Tests & Test Runner Setup', () => {
   beforeEach(() => {
