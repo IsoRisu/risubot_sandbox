@@ -774,30 +774,31 @@ class Game {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
     this.camera.position.set(0, this.playerHeight, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance', precision: 'highp' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = true;
+    this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
 
-    // Optimized Multi-Point Neon Lighting & Shadow Cascades
+    // Optimized Multi-Point Neon Lighting & Shadow Cascades (Fine-tuned bias & high resolution shadows)
     const ambientLight = new THREE.AmbientLight(0x0f1d38, 1.6);
     this.scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0x00f0ff, 2.4);
-    dirLight.position.set(35, 55, 35);
+    dirLight.position.set(40, 65, 40);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.bias = -0.00008;
-    dirLight.shadow.normalBias = 0.015;
-    dirLight.shadow.radius = 2.0;
-    dirLight.shadow.camera.near = 0.8;
-    dirLight.shadow.camera.far = 180;
-    const d = 60;
+    dirLight.shadow.mapSize.width = 4096;
+    dirLight.shadow.mapSize.height = 4096;
+    dirLight.shadow.bias = -0.00003;
+    dirLight.shadow.normalBias = 0.025;
+    dirLight.shadow.radius = 2.2;
+    dirLight.shadow.camera.near = 1.0;
+    dirLight.shadow.camera.far = 190;
+    const d = 65;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
