@@ -3585,7 +3585,9 @@ class Octree {
   }
 }
 
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', () => {
-  new Game();
-});
+// Initialize on page load (safeguarded for test runner and SSR environments)
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    new Game();
+  });
+}
