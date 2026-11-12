@@ -3822,7 +3822,14 @@ class Octree {
 
 // Initialize on page load (safeguarded for test runner and SSR environments)
 if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', () => {
-    new Game();
-  });
+  const initGame = () => {
+    if (!window.gameInstance) {
+      window.gameInstance = new Game();
+    }
+  };
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initGame);
+  } else {
+    initGame();
+  }
 }
