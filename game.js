@@ -3791,11 +3791,3 @@ if (typeof window !== 'undefined') {
     initGame();
   }
 }
-// Initialize Game instance on DOMContentLoaded or immediately if document is already ready
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  window.gameInstance = new Game();
-} else {
-  window.addEventListener('DOMContentLoaded', () => {
-    window.gameInstance = new Game();
-  });
-}
