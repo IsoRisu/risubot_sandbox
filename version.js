@@ -5,9 +5,9 @@
 
 const GAME_VERSION = {
   major: 1,
-  minor: 6,
+  minor: 7,
   patch: 0,
-  tag: 'CYBER_STRIKE_EXPANDED_EDITION',
+  tag: 'CYBER_STRIKE_HUD_UI_EXPANDED',
   toString() {
     return `v${this.major}.${this.minor}.${this.patch}-${this.tag}`;
   }

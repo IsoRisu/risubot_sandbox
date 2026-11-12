@@ -1,6 +1,6 @@
 {
   "name": "cyber-strike-3d",
-  "version": "1.2.4",
+  "version": "1.7.0",
   "description": "Cyber Strike 3D FPS Game",
   "scripts": {
     "test": "vitest run"
