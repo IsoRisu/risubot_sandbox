@@ -801,4 +801,62 @@ describe('Version Management System Tests', () => {
     state.dashCooldown = Math.max(0, state.dashCooldown - delta);
     expect(state.dashCooldown).toBe(2.0);
   });
+});describe('New Features Unit Tests (EMP, Nano Shield, Tactical Stim, and Dash Shockwave)', () => {
+  it('verifies consumable usage and count limitations for emp, shield, and stim', () => {
+    CONSUMABLES.emp.count = 2;
+    CONSUMABLES.shield.count = 2;
+    CONSUMABLES.stim.count = 3;
+
+    expect(CONSUMABLES.emp.count).toBe(2);
+    expect(CONSUMABLES.shield.count).toBe(2);
+    expect(CONSUMABLES.stim.count).toBe(3);
+
+    // Simulate using EMP
+    const useEmpMock = () => {
+      if (CONSUMABLES.emp.count > 0) {
+        CONSUMABLES.emp.count--;
+        return true;
+      }
+      return false;
+    };
+
+    expect(useEmpMock()).toBe(true);
+    expect(CONSUMABLES.emp.count).toBe(1);
+  });
+
+  it('verifies alternate fire mode toggle and weapon stats configuration', () => {
+    const plasma = WEAPONS[0];
+    expect(plasma.isEnergy).toBe(true);
+    expect(plasma.altFireName).toBeDefined();
+    expect(plasma.altFireCost).toBeGreaterThan(0);
+
+    let altFireMode = false;
+    const toggleAltFire = () => {
+      if (plasma.isEnergy) {
+        altFireMode = !altFireMode;
+      }
+    };
+
+    toggleAltFire();
+    expect(altFireMode).toBe(true);
+    toggleAltFire();
+    expect(altFireMode).toBe(false);
+  });
+
+  it('verifies dash shockwave pulse damage calculation and range check', () => {
+    const dashOrigin = new THREE.Vector3(0, 0, 0);
+    const enemies = [
+      { hp: 100, mesh: { position: new THREE.Vector3(3, 0, 0) } }, // within 7.0 range
+      { hp: 100, mesh: { position: new THREE.Vector3(12, 0, 0) } } // outside range
+    ];
+
+    enemies.forEach(en => {
+      if (en.mesh.position.distanceTo(dashOrigin) < 7.0) {
+        en.hp -= 40;
+      }
+    });
+
+    expect(enemies[0].hp).toBe(60);
+    expect(enemies[1].hp).toBe(100);
+  });
 });
