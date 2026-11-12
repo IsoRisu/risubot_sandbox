@@ -1,4 +1,4 @@
-# Hi
+# Hey
 
 An action-packed 3D First Person Shooter game built with **Three.js** and Web Audio API synthesis. Fight off waves of cybernetic drones, bosses, collect power-ups, and survive!
 
