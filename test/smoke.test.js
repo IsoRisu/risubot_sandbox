@@ -1,40 +1,163 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// Load version script
+// Load version and game engine scripts for smoke testing runner setup and game state
 import '../version.js';
+import '../game.js';
 
-describe('Cyber Strike 3D Smoke Tests', () => {
+describe('Cyber Strike 3D Smoke Tests & Test Runner Setup', () => {
   beforeEach(() => {
     document.body.innerHTML = `
+      <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="crosshair"><div class="ch-dot"></div><div id="hit-marker" class="hidden"></div></div>
+        <div id="hud" class="hidden">
+          <span id="wave-num">1</span>
+          <span id="enemy-count">0</span>
+          <span id="score-val">0</span>
+          <span id="high-score-val">0</span>
+          <span id="health-text">50 | 100</span>
+          <div id="shield-bar-fill"></div>
+          <div id="health-bar-fill"></div>
+          <div id="dash-bar-fill"></div>
+          <span id="dash-status">READY</span>
+          <span id="weapon-name">PLASMA RIFLE</span>
+          <span id="fire-mode-indicator">STANDARD</span>
+          <span id="ammo-clip">30</span>
+          <span id="ammo-reserve">120</span>
+          <div id="heat-container" class="hidden"><div id="heat-bar-fill"></div><span id="heat-status">0%</span></div>
+          <span id="count-emp">2</span>
+          <span id="count-shield">2</span>
+          <span id="count-stim">3</span>
+          <div id="reload-warning" class="hidden"></div>
+          <div id="low-health-warning" class="hidden"></div>
+          <div id="powerup-banner" class="hidden"></div>
+          <div id="combo-banner" class="hidden"></div>
+          <div id="wave-banner" class="hidden"></div>
+        </div>
+        <div id="start-screen" class="overlay">
+          <button id="start-btn"></button>
+          <div id="menu-version"></div>
+        </div>
+        <div id="game-over-screen" class="overlay hidden">
+          <strong id="final-score"></strong>
+          <strong id="overlay-high-score"></strong>
+          <strong id="final-wave"></strong>
+          <strong id="final-kills"></strong>
+          <strong id="final-accuracy"></strong>
+          <strong id="final-headshots"></strong>
+          <button id="restart-btn"></button>
+        </div>
+        <div id="pause-screen" class="overlay hidden"></div>
+        <div id="upgrade-shop-screen" class="overlay hidden">
+          <span id="shop-credits"></span>
+          <span id="cost-damage"></span>
+          <span id="cost-cooling"></span>
+          <span id="cost-shield"></span>
+          <span id="cost-health"></span>
+          <span id="cost-mod-scope"></span>
+          <span id="cost-mod-mag"></span>
+          <button id="buy-damage"></button>
+          <button id="buy-cooling"></button>
+          <button id="buy-shield"></button>
+          <button id="buy-health"></button>
+          <button id="buy-mod-scope"></button>
+          <button id="buy-mod-mag"></button>
+          <button id="close-shop-btn"></button>
+        </div>
+        <div id="boss-bar-container" class="hidden">
+          <div id="boss-name"></div>
+          <div id="boss-bar-fill"></div>
+        </div>
+        <div id="hurt-screen"></div>
+        <div id="touch-controls-overlay" class="hidden">
+          <div id="joystick-left-zone"><div id="joystick-left-base"><div id="joystick-left-thumb"></div></div></div>
+          <div id="joystick-right-zone"><div id="joystick-right-base"><div id="joystick-right-thumb"></div></div></div>
+          <button id="touch-shoot-btn"></button>
+          <button id="touch-dash-btn"></button>
+          <button id="touch-jump-btn"></button>
+          <button id="touch-reload-btn"></button>
+          <button id="touch-pause-btn"></button>
+        </div>
+      </div>
       <div id="game-version-badge"></div>
-      <div id="menu-version"></div>
-      <canvas id="game-canvas"></canvas>
     `;
   });
 
-  it('verifies game version object and DOM injection', () => {
+  it('verifies game version object, test runner setup, and DOM element injection', () => {
     expect(window.GAME_VERSION).toBeDefined();
     expect(window.GAME_VERSION.major).toBe(1);
     expect(window.GAME_VERSION.toString()).toContain('v1.2.');
+    expect(document.getElementById('game-canvas')).toBeDefined();
+    expect(document.getElementById('hud')).toBeDefined();
+    expect(document.getElementById('start-btn')).toBeDefined();
   });
 
-  it('verifies energy weapon heat buildup and alt-fire settings', () => {
+  it('verifies Three.js environment setup and core constructors', () => {
+    expect(THREE).toBeDefined();
+    expect(THREE.Scene).toBeDefined();
+    expect(THREE.PerspectiveCamera).toBeDefined();
+    expect(THREE.WebGLRenderer).toBeDefined();
+    expect(THREE.Vector3).toBeDefined();
+    expect(THREE.Raycaster).toBeDefined();
+
+    const scene = new THREE.Scene();
+    expect(scene).toBeDefined();
+    const camera = new THREE.PerspectiveCamera(75, 1.33, 0.1, 100);
+    expect(camera.position).toBeDefined();
+  });
+
+  it('verifies basic game state initialization and default values', () => {
+    expect(state).toBeDefined();
+    expect(state.active).toBe(false);
+    expect(state.paused).toBe(false);
+    expect(state.health).toBe(100);
+    expect(state.maxHealth).toBe(100);
+    expect(state.shield).toBe(50);
+    expect(state.maxShield).toBe(50);
+    expect(state.score).toBe(0);
+    expect(state.wave).toBe(1);
+    expect(state.currentWeapon).toBe(0);
+    expect(state.ammoClip).toBe(30);
+    expect(state.ammoReserve).toBe(120);
+  });
+
+  it('verifies weapons configuration, energy properties, and alt-fire settings', () => {
     expect(WEAPONS).toBeDefined();
+    expect(WEAPONS.length).toBe(4);
     const plasma = WEAPONS[0];
+    expect(plasma.name).toBe('PLASMA RIFLE');
     expect(plasma.isEnergy).toBe(true);
     expect(plasma.heatPerShot).toBeGreaterThan(0);
     expect(plasma.altFireName).toBeDefined();
+    expect(plasma.altFireCost).toBeDefined();
+
+    const shotgun = WEAPONS[1];
+    expect(shotgun.isEnergy).toBe(false);
+    expect(shotgun.pellets).toBe(8);
   });
 
-  it('verifies test runner environment and global mocks', () => {
+  it('verifies consumables configuration', () => {
+    expect(CONSUMABLES).toBeDefined();
+    expect(CONSUMABLES.emp).toBeDefined();
+    expect(CONSUMABLES.shield).toBeDefined();
+    expect(CONSUMABLES.stim).toBeDefined();
+    expect(CONSUMABLES.emp.count).toBeGreaterThanOrEqual(0);
+    expect(CONSUMABLES.shield.count).toBeGreaterThanOrEqual(0);
+    expect(CONSUMABLES.stim.count).toBeGreaterThanOrEqual(0);
+  });
+
+  it('verifies test runner environment, AudioContext mock, and canvas 2d context', () => {
     expect(window.AudioContext).toBeDefined();
     const audioCtx = new window.AudioContext();
     expect(audioCtx.currentTime).toBe(0);
+    expect(typeof audioCtx.createOscillator).toBe('function');
+    expect(typeof audioCtx.createGain).toBe('function');
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     expect(ctx).toBeDefined();
     expect(typeof ctx.fillRect).toBe('function');
+    expect(typeof ctx.strokeRect).toBe('function');
   });
 });
 describe('Octree Spatial Partitioning Tests', () => {
