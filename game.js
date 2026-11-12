@@ -661,21 +661,21 @@ class Game {
     this.pickups = [];
     this.particles = [];
     this.particlePool = [];
-    this.maxPoolSize = 150;
+    this.maxPoolSize = 300;
 
     this.damagePopups = [];
     this.damagePopupPool = [];
-    this.maxPopupPoolSize = 40;
+    this.maxPopupPoolSize = 60;
 
-    // Object Pooling for Tracers, Projectiles, and Debris
+    // Expanded Object Pooling for Tracers, Projectiles, Debris, and Particle Effects
     this.tracerPool = [];
-    this.maxTracerPoolSize = 60;
+    this.maxTracerPoolSize = 100;
 
     this.projectilePool = [];
-    this.maxProjectilePoolSize = 50;
+    this.maxProjectilePoolSize = 120;
 
     this.debrisPool = [];
-    this.maxDebrisPoolSize = 60;
+    this.maxDebrisPoolSize = 150;
 
     // Reusable Geometries and Materials to eliminate per-frame/shot allocations
     this.sharedGeos = {
@@ -778,23 +778,23 @@ class Game {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = true;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.toneMappingExposure = 1.25;
 
-    // Enhanced Multi-Point Neon Lighting
-    const ambientLight = new THREE.AmbientLight(0x0f1d38, 1.5);
+    // Optimized Multi-Point Neon Lighting & Shadow Cascades
+    const ambientLight = new THREE.AmbientLight(0x0f1d38, 1.6);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x00f0ff, 2.2);
-    dirLight.position.set(30, 50, 30);
+    const dirLight = new THREE.DirectionalLight(0x00f0ff, 2.4);
+    dirLight.position.set(35, 55, 35);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 4096;
-    dirLight.shadow.mapSize.height = 4096;
-    dirLight.shadow.bias = -0.0001;
-    dirLight.shadow.normalBias = 0.02;
-    dirLight.shadow.radius = 2.5; // Tuned PCF soft shadow blur radius for dynamic performance
-    dirLight.shadow.camera.near = 1.0;
-    dirLight.shadow.camera.far = 160;
-    const d = 55; // Expanded frustum to prevent cascade-shift/clipping during rapid rotations and high FOV adjustments
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.bias = -0.00008;
+    dirLight.shadow.normalBias = 0.015;
+    dirLight.shadow.radius = 2.0;
+    dirLight.shadow.camera.near = 0.8;
+    dirLight.shadow.camera.far = 180;
+    const d = 60;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
