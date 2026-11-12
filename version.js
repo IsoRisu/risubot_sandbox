@@ -13,14 +13,18 @@ const GAME_VERSION = {
   }
 };
 
-window.GAME_VERSION = GAME_VERSION;
+if (typeof window !== 'undefined') {
+  window.GAME_VERSION = GAME_VERSION;
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-  const badge = document.getElementById('game-version-badge');
-  if (badge) badge.textContent = GAME_VERSION.toString();
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const badge = document.getElementById('game-version-badge');
+    if (badge) badge.textContent = GAME_VERSION.toString();
 
-  const menuVersion = document.getElementById('menu-version');
-  if (menuVersion) menuVersion.textContent = `CYBER STRIKE ENGINE ${GAME_VERSION.toString()}`;
-});
+    const menuVersion = document.getElementById('menu-version');
+    if (menuVersion) menuVersion.textContent = `CYBER STRIKE ENGINE ${GAME_VERSION.toString()}`;
+  });
+}
 
 console.log(`[Cyber Strike 3D] Loaded Engine Version: ${GAME_VERSION.toString()}`);
