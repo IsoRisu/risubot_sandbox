@@ -625,7 +625,7 @@ const state = {
   ammoReserve: 120,
   isReloading: false,
   score: 0,
-  highScore: parseInt(localStorage.getItem('cyber_strike_highscore') || '0', 10),
+  highScore: parseInt((typeof localStorage !== 'undefined' ? localStorage.getItem('cyber_strike_highscore') : null) || '0', 10),
   kills: 0,
   wave: 1,
   enemiesLeft: 0,
