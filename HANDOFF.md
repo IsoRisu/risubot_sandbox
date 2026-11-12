@@ -4,18 +4,16 @@
 
 - WARNING: the work on `game
 - js` did NOT land: the file is large and none of the AI's edits to it were applied, so the AI's own report of finished work is not shown
-- What was actually changed: `version
+- What was actually changed: `game
 - js`
 - [game
-- js is large: shown 3 sections, no edits landed; the model may have refused to edit it — see EDIT_SYSTEM 'LARGE FILES' rule
+- js is large: shown 2 sections, no edits landed; the model may have refused to edit it — see EDIT_SYSTEM 'LARGE FILES' rule
 - ]
 
 ## What the next run should do
 
-- Implement audio voice allocation pooling and compressor limiter in synth engine to fix clipping
-- Optimize shadow map cascades, bias values, and performance settings in Three.js renderer
-- Expand object pooling to projectiles, particle effects, and debris for GC reduction
-- Enhance UI/UX styling, HUD layout, responsiveness, and semantic versioning updates
+- Examine game.js and test/smoke.test.js to understand current projectile, particle, and debris creation and lifecycle management
+- Implement or expand object pooling structures for projectiles, particle effects, and debris in game.js
 
 ## How to verify
 

@@ -664,7 +664,7 @@ class Game {
     this.pickups = [];
     this.particles = [];
     this.particlePool = [];
-    this.maxPoolSize = 300;
+    this.maxPoolSize = 250;
 
     this.damagePopups = [];
     this.damagePopupPool = [];
@@ -672,13 +672,14 @@ class Game {
 
     // Expanded Object Pooling for Tracers, Projectiles, Debris, and Particle Effects
     this.tracerPool = [];
-    this.maxTracerPoolSize = 100;
+    this.maxTracerPoolSize = 80;
 
     this.projectilePool = [];
     this.maxProjectilePoolSize = 120;
 
     this.debrisPool = [];
     this.maxDebrisPoolSize = 150;
+    this.activeDebris = [];
 
     // Reusable Geometries and Materials to eliminate per-frame/shot allocations
     this.sharedGeos = {
