@@ -8,3 +8,4 @@ Please update the test runner configuration and environment setup (`package.json
 2. Three.js is correctly installed/imported and globally exposed (`global.THREE = THREE` or imported in setup).
 3. Core game classes/structures (`Octree`, `SoundSystem`, `CONSUMABLES`, `WEAPONS`, `state`, etc.) are either correctly loaded or exported/exposed globally so smoke tests in `test/smoke.test.js` can access them without `ReferenceError`.
 ```
+- Fix `ReferenceError: state is not defined` in `test/smoke.test.js:269:12` by ensuring the global `state` object (or imported game state) is properly declared and initialized in the test environment or exposed on `globalThis` / `window` prior to running test blocks that access `state`.
