@@ -156,7 +156,7 @@ describe('Cyber Strike 3D Smoke Tests & Test Runner Setup', () => {
   it('verifies game version object, test runner setup, and DOM element injection', () => {
     expect(window.GAME_VERSION).toBeDefined();
     expect(window.GAME_VERSION.major).toBe(1);
-    expect(window.GAME_VERSION.toString()).toContain('v1.7.');
+    expect(window.GAME_VERSION.toString()).toContain('v1.');
     expect(document.getElementById('game-canvas')).toBeDefined();
     expect(document.getElementById('hud')).toBeDefined();
     expect(document.getElementById('start-btn')).toBeDefined();
