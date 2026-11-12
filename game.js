@@ -96,10 +96,13 @@ class SoundSystem {
   }
 
   playGunshot() {
-
-
     if (!this.ctx) return;
+    if (this.activeVoices >= this.maxConcurrentVoices) return;
+    this.activeVoices++;
     const now = this.ctx.currentTime;
+    setTimeout(() => {
+      this.activeVoices = Math.max(0, this.activeVoices - 1);
+    }, 150 + 50);
     
     // Noise buffer for blast
     const bufferSize = this.ctx.sampleRate * 0.12;
