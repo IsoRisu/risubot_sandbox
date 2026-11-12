@@ -1414,7 +1414,8 @@ class Game {
     let effectiveClip = w.clipSize;
     if (w.mods && w.mods.includes('mag')) effectiveClip = Math.round(effectiveClip * 1.5);
     state.clipSize = effectiveClip;
-    state.ammoClip = effectiveClip;
+    state.ammoClip = Math.min(state.ammoClip, effectiveClip);
+    state.ammoReserve = Math.max(0, state.ammoReserve);
     state.altFireMode = false;
 
     this.weaponMeshes.forEach((m, idx) => {
@@ -2298,7 +2299,7 @@ class Game {
   }
 
   reloadWeapon() {
-    if (state.isReloading || state.ammoClip === state.clipSize || state.ammoReserve <= 0) return;
+    if (state.isReloading || state.ammoClip >= state.clipSize || state.ammoReserve <= 0) return;
 
     state.isReloading = true;
     sounds.playReload();
@@ -2310,10 +2311,10 @@ class Game {
     this.weaponRecoil.rotX = -0.4;
 
     setTimeout(() => {
-      const needed = state.clipSize - state.ammoClip;
+      const needed = Math.max(0, state.clipSize - state.ammoClip);
       const amount = Math.min(needed, state.ammoReserve);
-      state.ammoClip += amount;
-      state.ammoReserve -= amount;
+      state.ammoClip = Math.min(state.clipSize, state.ammoClip + amount);
+      state.ammoReserve = Math.max(0, state.ammoReserve - amount);
       state.isReloading = false;
       warning.classList.add('hidden');
       this.updateHUD();

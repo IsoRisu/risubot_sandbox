@@ -265,7 +265,7 @@ describe('Shadow Map and Frustum Configuration Tests', () => {
     expect(dirLight.shadow.camera.far).toBe(160);
   });
 });describe('Game State Initialization, Weapon Switching, and Ammo Calculations', () => {
-  it('initializes game state correctly with default values', () => {
+  it('initializes game state correctly with default values and proper boundaries', () => {
     expect(state).toBeDefined();
     expect(state.health).toBe(100);
     expect(state.maxHealth).toBe(100);
@@ -274,10 +274,12 @@ describe('Shadow Map and Frustum Configuration Tests', () => {
     expect(state.score).toBe(0);
     expect(state.wave).toBe(1);
     expect(state.currentWeapon).toBe(0);
+    expect(state.ammoClip).toBeGreaterThan(0);
+    expect(state.ammoReserve).toBeGreaterThanOrEqual(0);
+    expect(state.isReloading).toBe(false);
   });
 
-  it('performs weapon switching and updates clip size and ammo correctly', () => {
-    // Simulate game state initialization
+  it('performs weapon switching and updates clip size and ammo correctly with clamping', () => {
     state.currentWeapon = 0;
     state.clipSize = WEAPONS[0].clipSize;
     state.ammoClip = WEAPONS[0].clipSize;
@@ -289,22 +291,34 @@ describe('Shadow Map and Frustum Configuration Tests', () => {
     const targetWeapon = WEAPONS[1];
     state.currentWeapon = 1;
     state.clipSize = targetWeapon.clipSize;
-    state.ammoClip = targetWeapon.clipSize;
+    state.ammoClip = Math.min(state.ammoClip, targetWeapon.clipSize);
+    state.ammoReserve = Math.max(0, targetWeapon.maxReserve);
 
     expect(state.currentWeapon).toBe(1);
     expect(state.clipSize).toBe(8);
-    expect(state.ammoClip).toBe(8);
+    expect(state.ammoClip).toBeLessThanOrEqual(8);
+    expect(state.ammoReserve).toBe(48);
 
     // Test ammo clip reduction on shot / reload logic
-    state.ammoClip -= 3;
-    expect(state.ammoClip).toBe(5);
-
-    // Test reload calculation
-    const needed = state.clipSize - state.ammoClip;
+    state.ammoClip = 5;
+    const needed = Math.max(0, state.clipSize - state.ammoClip);
     const amount = Math.min(needed, state.ammoReserve);
-    state.ammoClip += amount;
-    state.ammoReserve -= amount;
+    state.ammoClip = Math.min(state.clipSize, state.ammoClip + amount);
+    state.ammoReserve = Math.max(0, state.ammoReserve - amount);
     expect(state.ammoClip).toBe(8);
+    expect(state.ammoReserve).toBe(45);
+  });
+
+  it('validates ammunition calculations with zero reserves and overflow protection', () => {
+    state.clipSize = 10;
+    state.ammoClip = 2;
+    state.ammoReserve = 0;
+
+    const needed = Math.max(0, state.clipSize - state.ammoClip);
+    const amount = Math.min(needed, state.ammoReserve);
+    state.ammoClip = Math.min(state.clipSize, state.ammoClip + amount);
+    expect(state.ammoClip).toBe(2);
+    expect(state.ammoReserve).toBe(0);
   });
 });
 
