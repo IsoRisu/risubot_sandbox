@@ -844,6 +844,9 @@ class Game {
     const restartBtn = document.getElementById('restart-btn');
 
     const handleGameStart = () => {
+      if (sounds.ctx && sounds.ctx.state === 'suspended') {
+        sounds.ctx.resume().catch(() => {});
+      }
       sounds.init();
       this.startNewGame();
       // Check if touch device or mobile browser to display virtual joysticks
