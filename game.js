@@ -3546,108 +3546,61 @@ class Game {
       const d = this.activeDecals[i];
       d.life -= delta;
       d.mesh.material.opacity = Math.max(0, (d.life / d.maxLife) * 0.85);
-
       if (d.life <= 0) {
         d.mesh.visible = false;
         this.activeDecals.splice(i, 1);
-        if (this.bulletDecalPool.length < 50) {
+        if (this.bulletDecalPool.length < 40) {
           this.bulletDecalPool.push(d.mesh);
         } else {
           this.scene.remove(d.mesh);
-          d.mesh.geometry.dispose();
-          d.mesh.material.dispose();
+          if (d.mesh.geometry) d.mesh.geometry.dispose();
+          if (d.mesh.material) d.mesh.material.dispose();
         }
       }
     }
   }
 
-  // Reactive Environmental Lighting Shifts Tied to Higher Wave Progression
   applyWaveLightingShift(waveNumber) {
-    if (!this.scene) return;
-    const dirLight = this.scene.children.find(c => c.isDirectionalLight && c.position.x === 30);
-    const ambientLight = this.scene.children.find(c => c.isAmbientLight);
-    const pointLights = this.scene.children.filter(c => c.isPointLight && c !== this.muzzleFlashLight);
-
-    let targetBgColor = 0x02050a;
-    let dirColor = 0x00f0ff;
-    let ambientColor = 0x0f1d38;
-    let exposure = 1.2;
-
-    if (waveNumber >= 10) {
-      // Wave 10+: Crimson Cyber Overload / Blood Moon tier
-      targetBgColor = 0x140205;
-      dirColor = 0xff0044;
-      ambientColor = 0x2e0f15;
-      exposure = 1.4;
-    } else if (waveNumber >= 7) {
-      // Wave 7-9: Purple Neon Cyber Matrix tier
-      targetBgColor = 0x0d0214;
-      dirColor = 0xff00ff;
-      ambientColor = 0x220f2e;
-      exposure = 1.35;
-    } else if (waveNumber >= 4) {
-      // Wave 4-6: Amber Hardened Security tier
-      targetBgColor = 0x140a02;
-      dirColor = 0xffaa00;
-      ambientColor = 0x2e1f0f;
-      exposure = 1.25;
+    const colorSchemes = [
+      0x00f0ff,
+      0xff0055,
+      0x00ff88,
+      0xffaa00,
+      0x9900ff
+    ];
+    const color = colorSchemes[(waveNumber - 1) % colorSchemes.length];
+    if (this.scene) {
+      this.scene.fog.color.setHex(color === 0xff0055 ? 0x0a0205 : 0x02050a);
     }
-
-    this.scene.background.setHex(targetBgColor);
-    if (this.scene.fog) {
-      this.scene.fog.color.setHex(targetBgColor);
-    }
-    if (dirLight) dirLight.color.setHex(dirColor);
-    if (ambientLight) ambientLight.color.setHex(ambientColor);
-    if (this.renderer) {
-      this.renderer.toneMappingExposure = exposure;
-    }
-
-    // Shift point lights dynamically
-    pointLights.forEach((pl, idx) => {
-      if (waveNumber >= 10) {
-        pl.color.setHex(idx % 2 === 0 ? 0xff0044 : 0xffaa00);
-      } else if (waveNumber >= 7) {
-        pl.color.setHex(idx % 2 === 0 ? 0xff00ff : 0x00f0ff);
-      } else if (waveNumber >= 4) {
-        pl.color.setHex(idx % 2 === 0 ? 0xffaa00 : 0x00ff88);
-      }
-    });
   }
 
   updateCombatDrone(delta) {
-    if (!this.combatDrone || !this.droneActive || !state.active || state.paused) return;
-    this.droneAngle += delta * 2.0;
-    const orbitRadius = 2.5;
-    const targetX = this.camera.position.x + Math.cos(this.droneAngle) * orbitRadius;
-    const targetZ = this.camera.position.z + Math.sin(this.droneAngle) * orbitRadius;
-    const targetY = this.camera.position.y + 0.5 + Math.sin(this.droneAngle * 2) * 0.2;
+    if (!this.combatDrone || !this.droneActive) return;
+    this.droneAngle += delta * 1.5;
+    const playerPos = this.camera.position;
+    const offsetX = Math.cos(this.droneAngle) * 2.5;
+    const offsetZ = Math.sin(this.droneAngle) * 2.5;
+    this.combatDrone.mesh.position.set(playerPos.x + offsetX, playerPos.y + 1.2, playerPos.z + offsetZ);
+    this.combatDrone.mesh.rotation.y += delta * 3;
 
-    this.combatDrone.mesh.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), delta * 8);
-    this.combatDrone.mesh.rotation.y += delta * 4;
-
-    // Autonomous combat drone firing support at nearest enemy
     const now = performance.now();
     if (now - this.combatDrone.lastShot > this.combatDrone.fireInterval && this.enemies.length > 0) {
-      let nearestEnemy = null;
-      let minDist = Infinity;
+      let nearest = null;
+      let minD = Infinity;
       this.enemies.forEach(en => {
         const d = en.mesh.position.distanceTo(this.combatDrone.mesh.position);
-        if (d < minDist) {
-          minDist = d;
-          nearestEnemy = en;
+        if (d < minD) {
+          minD = d;
+          nearest = en;
         }
       });
-
-      if (nearestEnemy && minDist < this.combatDrone.range) {
+      if (nearest && minD < this.combatDrone.range) {
         this.combatDrone.lastShot = now;
         sounds.playLaser();
-        nearestEnemy.hp -= 25;
-        this.createSparks(nearestEnemy.mesh.position, 0x00ff88);
-        this.createTracerLine(this.combatDrone.mesh.position, nearestEnemy.mesh.position, 0x00ff88);
-        if (nearestEnemy.hp <= 0) {
-          this.destroyEnemy(nearestEnemy);
-        }
+        nearest.hp -= 25;
+        this.createSparks(nearest.mesh.position, 0x00ff88);
+        this.createTracerLine(this.combatDrone.mesh.position, nearest.mesh.position, 0x00ff88);
+        if (nearest.hp <= 0) this.destroyEnemy(nearest);
       }
     }
   }
@@ -3659,14 +3612,19 @@ class Game {
 
     if (state.active && !state.paused) {
       this.updatePlayer(delta);
-      this.updateCombatDrone(delta);
-      this.updateHazardZones(delta);
       this.updateEnemies(delta);
       this.updatePickups();
       this.updateParticles(delta);
-      this.updateDecals(delta);
       this.updateWeapon(delta);
       this.updateRadar();
+      this.updateHazardZones(delta);
+      this.updateDecals(delta);
+      this.updateCombatDrone(delta);
+
+      // Check win/wave clearing or boss state
+      if (state.boss && state.boss.hp <= 0) {
+        this.destroyEnemy(state.boss);
+      }
     }
 
     this.renderer.render(this.scene, this.camera);
