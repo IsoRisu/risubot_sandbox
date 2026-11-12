@@ -1870,6 +1870,16 @@ class Game {
 
     this.createSparks(this.camera.position, 0x00f0ff);
     this.screenShake = 0.18;
+
+    // New Feature: Dash Shockwave Pulse (Stuns and damages nearby enemies upon dashing)
+    const dashOrigin = this.camera.position.clone();
+    this.enemies.forEach(en => {
+      if (en.mesh.position.distanceTo(dashOrigin) < 7.0) {
+        en.hp -= 40;
+        this.createSparks(en.mesh.position, 0x00f0ff);
+        if (en.hp <= 0) this.destroyEnemy(en);
+      }
+    });
   }
 
   toggleAltFire() {
