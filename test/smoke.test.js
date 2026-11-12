@@ -4,14 +4,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../version.js';
 import '../game.js';
 
-// Ensure global variables are exposed on globalThis for vitest environments
-if (typeof GAME_VERSION !== 'undefined') globalThis.GAME_VERSION = GAME_VERSION;
-if (typeof state !== 'undefined') globalThis.state = state;
-if (typeof WEAPONS !== 'undefined') globalThis.WEAPONS = WEAPONS;
-if (typeof CONSUMABLES !== 'undefined') globalThis.CONSUMABLES = CONSUMABLES;
-if (typeof Octree !== 'undefined') globalThis.Octree = Octree;
-if (typeof SoundSystem !== 'undefined') globalThis.SoundSystem = SoundSystem;
-if (typeof THREE !== 'undefined') globalThis.THREE = THREE;
+// Ensure global variables are exposed on globalThis and global for vitest environments
+if (typeof GAME_VERSION !== 'undefined') { globalThis.GAME_VERSION = GAME_VERSION; global.GAME_VERSION = GAME_VERSION; }
+if (typeof state !== 'undefined') { globalThis.state = state; global.state = state; }
+if (typeof WEAPONS !== 'undefined') { globalThis.WEAPONS = WEAPONS; global.WEAPONS = WEAPONS; }
+if (typeof CONSUMABLES !== 'undefined') { globalThis.CONSUMABLES = CONSUMABLES; global.CONSUMABLES = CONSUMABLES; }
+if (typeof Octree !== 'undefined') { globalThis.Octree = Octree; global.Octree = Octree; }
+if (typeof SoundSystem !== 'undefined') { globalThis.SoundSystem = SoundSystem; global.SoundSystem = SoundSystem; }
+if (typeof THREE !== 'undefined') { globalThis.THREE = THREE; global.THREE = THREE; }
 
 describe('Cyber Strike 3D Smoke Tests & Test Runner Setup', () => {
   beforeEach(() => {
@@ -274,6 +274,29 @@ describe('Shadow Map and Frustum Configuration Tests', () => {
     expect(dirLight.shadow.camera.far).toBe(160);
   });
 });describe('Game State Initialization, Weapon Switching, and Ammo Calculations', () => {
+  beforeEach(() => {
+    if (typeof state !== 'undefined') {
+      state.active = false;
+      state.paused = false;
+      state.health = 100;
+      state.maxHealth = 100;
+      state.shield = 50;
+      state.maxShield = 50;
+      state.shieldDelayTimer = 0;
+      state.ammoClip = 30;
+      state.clipSize = 30;
+      state.ammoReserve = 120;
+      state.isReloading = false;
+      state.score = 0;
+      state.kills = 0;
+      state.wave = 1;
+      state.currentWeapon = 0;
+      state.dashCooldown = 0;
+      state.comboCount = 0;
+      state.comboTimer = 0;
+    }
+  });
+
   it('initializes game state correctly with default values and proper boundaries', () => {
     expect(state).toBeDefined();
     expect(state.health).toBe(100);

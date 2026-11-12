@@ -69,26 +69,32 @@ import '../game.js';
 if (typeof GAME_VERSION !== 'undefined') {
   globalThis.GAME_VERSION = GAME_VERSION;
   global.window.GAME_VERSION = GAME_VERSION;
+  global.GAME_VERSION = GAME_VERSION;
 }
 if (typeof state !== 'undefined') {
   globalThis.state = state;
   global.window.state = state;
+  global.state = state;
 }
 if (typeof WEAPONS !== 'undefined') {
   globalThis.WEAPONS = WEAPONS;
   global.window.WEAPONS = WEAPONS;
+  global.WEAPONS = WEAPONS;
 }
 if (typeof CONSUMABLES !== 'undefined') {
   globalThis.CONSUMABLES = CONSUMABLES;
   global.window.CONSUMABLES = CONSUMABLES;
+  global.CONSUMABLES = CONSUMABLES;
 }
 if (typeof Octree !== 'undefined') {
   globalThis.Octree = Octree;
   global.window.Octree = Octree;
+  global.Octree = Octree;
 }
 if (typeof SoundSystem !== 'undefined') {
   globalThis.SoundSystem = SoundSystem;
   global.window.SoundSystem = SoundSystem;
+  global.SoundSystem = SoundSystem;
 }
 
 // HTMLCanvasElement getContext mock
