@@ -11,7 +11,8 @@
 
 ## What the next run should do
 
-- Locate the engage simulation button in index.html and game.js
+- Inspect codebase for optimization and refactoring opportunities related to effort/performance
+- Run and verify test suite
 
 ## How to verify
 
