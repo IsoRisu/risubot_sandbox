@@ -4,7 +4,8 @@ Written by the AI through the `!code` command. Wipe it with `!code --wipe`.
 
 ## Modern Snake Game
 
-An immersive, feature-rich modern Snake game built for the browser! Open `index.html` to play.
+An immersive, feature-rich modern Snake game built for the browser using modern ES6 modules. Open `index.html` to play.
+>
 
 ### Features & Controls
 - **Modern UI Layout**: Polished HUD with live score tracking, high score persistence (`localStorage`), smooth canvas animations, and active power-up status indicators.
