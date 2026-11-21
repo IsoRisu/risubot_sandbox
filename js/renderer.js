@@ -4,6 +4,7 @@
  */
 
 import { CONFIG, COLORS, FOOD_TYPES } from './constants.js';
+import { ParticleSystem } from './particles.js';
 
 export class GameRenderer {
     /**
@@ -11,6 +12,7 @@ export class GameRenderer {
      * @param {Object} elements DOM elements for HUD and buttons
      */
     constructor(canvas, elements) {
+        this.particleSystem = new ParticleSystem();
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.gridSize = CONFIG.GRID_SIZE;
@@ -26,15 +28,17 @@ export class GameRenderer {
     }
 
     /**
-     * Clear the canvas and draw background grid and all game entities.
+     * Clear the canvas and draw background grid, particles, and all game entities.
      * @param {import('./types.js').GameState} state 
      */
     draw(state) {
         this.clearCanvas();
         this.drawGrid();
+        this.particleSystem.update();
+        this.particleSystem.draw(this.ctx);
         this.drawFood(state.food);
         this.drawActiveEffect(state.activeEffect);
-        this.drawSnake(state.snake);
+        this.drawSnake(state.snake, state.currentSkin);
     }
 
     clearCanvas() {
@@ -65,15 +69,28 @@ export class GameRenderer {
         let foodColor = FOOD_TYPES.NORMAL.color;
         let glowColor = FOOD_TYPES.NORMAL.glowColor;
 
-        if (food.type === FOOD_TYPES.BONUS.type) {
+        const ft = food.type;
+        if (ft === FOOD_TYPES.BONUS.type) {
             foodColor = FOOD_TYPES.BONUS.color;
             glowColor = FOOD_TYPES.BONUS.glowColor;
-        } else if (food.type === FOOD_TYPES.SLOW.type) {
+        } else if (ft === FOOD_TYPES.SLOW.type) {
             foodColor = FOOD_TYPES.SLOW.color;
             glowColor = FOOD_TYPES.SLOW.glowColor;
-        } else if (food.type === FOOD_TYPES.SPEED.type) {
+        } else if (ft === FOOD_TYPES.SPEED.type) {
             foodColor = FOOD_TYPES.SPEED.color;
             glowColor = FOOD_TYPES.SPEED.glowColor;
+        } else if (ft === FOOD_TYPES.MULTIPLIER.type) {
+            foodColor = FOOD_TYPES.MULTIPLIER.color;
+            glowColor = FOOD_TYPES.MULTIPLIER.glowColor;
+        } else if (ft === FOOD_TYPES.GHOST.type) {
+            foodColor = FOOD_TYPES.GHOST.color;
+            glowColor = FOOD_TYPES.GHOST.glowColor;
+        } else if (ft === FOOD_TYPES.MAGNET.type) {
+            foodColor = FOOD_TYPES.MAGNET.color;
+            glowColor = FOOD_TYPES.MAGNET.glowColor;
+        } else if (ft === FOOD_TYPES.FREEZE.type) {
+            foodColor = FOOD_TYPES.FREEZE.color;
+            glowColor = FOOD_TYPES.FREEZE.glowColor;
         }
 
         this.ctx.fillStyle = foodColor;
@@ -93,7 +110,14 @@ export class GameRenderer {
      */
     drawActiveEffect(activeEffect) {
         if (!activeEffect) return;
-        this.ctx.fillStyle = activeEffect === 'slow' ? "rgba(56, 189, 248, 0.85)" : "rgba(168, 85, 247, 0.85)";
+        let color = "rgba(168, 85, 247, 0.85)";
+        if (activeEffect === 'slow') color = "rgba(56, 189, 248, 0.85)";
+        else if (activeEffect === 'multiplier') color = "rgba(16, 185, 129, 0.85)";
+        else if (activeEffect === 'ghost') color = "rgba(99, 102, 241, 0.85)";
+        else if (activeEffect === 'magnet') color = "rgba(249, 115, 22, 0.85)";
+        else if (activeEffect === 'freeze') color = "rgba(6, 182, 212, 0.85)";
+
+        this.ctx.fillStyle = color;
         this.ctx.font = "bold 12px 'Segoe UI', sans-serif";
         this.ctx.textAlign = "left";
         this.ctx.fillText(`EFFECT: ${activeEffect.toUpperCase()}`, 10, 22);
@@ -101,13 +125,36 @@ export class GameRenderer {
 
     /**
      * @param {import('./types.js').Point[]} snake 
+     * @param {string} skinId 
      */
-    drawSnake(snake) {
+    drawSnake(snake, skinId = 'default') {
+        import('./constants.js').then(({ SNAKE_SKINS }) => {
+            // Handled or inline color selection
+        });
+
+        let headColor = COLORS.SNAKE_HEAD;
+        let bodyColor = COLORS.SNAKE_BODY;
+
+        if (skinId === 'neon') {
+            headColor = '#06b6d4'; bodyColor = '#38bdf8';
+        } else if (skinId === 'golden') {
+            headColor = '#eab308'; bodyColor = '#facc15';
+        } else if (skinId === 'cyberpunk') {
+            headColor = '#ec4899'; bodyColor = '#f43f5e';
+        } else if (skinId === 'rainbow') {
+            headColor = '#a855f7'; bodyColor = '#c084fc';
+        }
+
         snake.forEach((part, index) => {
-            this.ctx.fillStyle = index === 0 ? COLORS.SNAKE_HEAD : COLORS.SNAKE_BODY;
+            this.ctx.fillStyle = index === 0 ? headColor : bodyColor;
             if (index === 0) {
-                this.ctx.shadowColor = COLORS.SNAKE_HEAD;
+                this.ctx.shadowColor = headColor;
                 this.ctx.shadowBlur = 6;
+                this.particleSystem.emitTrail(
+                    part.x * this.gridSize + this.gridSize / 2,
+                    part.y * this.gridSize + this.gridSize / 2,
+                    headColor
+                );
             }
             this.ctx.fillRect(
                 part.x * this.gridSize + 1,

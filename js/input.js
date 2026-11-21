@@ -73,7 +73,7 @@ export class InputController {
             return;
         }
 
-        // Steering controls
+        // Steering controls & Enhanced UI navigation bindings
         if (CONTROLS.LEFT.includes(key) || keyCode === 37) {
             this.onDirectionChange(-1, 0);
             e.preventDefault();

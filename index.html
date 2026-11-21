@@ -173,7 +173,7 @@
 
     <div class="game-container">
         <div class="game-header">
-            <h1>Snake</h1>
+            <h1>Snake Deluxe</h1>
             <div class="score-board">
                 <div class="score-card">
                     <div class="score-label">Score</div>
@@ -193,9 +193,30 @@
         <div class="controls-panel">
             <button id="pause-btn" class="btn">Pause (P)</button>
             <button id="restart-btn" class="btn btn-primary">Restart (R)</button>
+            <button id="skins-btn" class="btn">Skins</button>
+            <button id="achievements-btn" class="btn">Awards</button>
         </div>
 
-        <div id="instructions">Use Arrow Keys to move. Press P to pause, R to restart.</div>
+        <div id="instructions">Use Arrow Keys or WASD to move. Press P to pause, R to restart.</div>
+    </div>
+
+    <!-- Skins Modal -->
+    <div id="skins-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-sizing: border-box; text-align: center;">
+            <h2 style="margin-top: 0; color: #38bdf8;">Snake Skins</h2>
+            <div id="coins-display" style="margin-bottom: 16px; font-weight: bold; color: #eab308;">Coins: <span id="coin-count">0</span></div>
+            <div id="skins-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; margin-bottom: 20px;"></div>
+            <button id="close-skins-btn" class="btn btn-primary">Back to Game</button>
+        </div>
+    </div>
+
+    <!-- Achievements Modal -->
+    <div id="achievements-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-sizing: border-box; text-align: center;">
+            <h2 style="margin-top: 0; color: #4ade80;">Achievements</h2>
+            <div id="achievements-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; margin-bottom: 20px; text-align: left;"></div>
+            <button id="close-achievements-btn" class="btn btn-primary">Back to Game</button>
+        </div>
     </div>
 
     <script type="module" src="js/main.js"></script>
